@@ -1,0 +1,1 @@
+target_compile_definitions(vulkan-renderer PRIVATE MODELS_PATH="${CMAKE_CURRENT_LIST_DIR}")
