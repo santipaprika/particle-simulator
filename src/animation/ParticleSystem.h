@@ -1,7 +1,8 @@
 #pragma once
-#include "Particle.h"
+#include <Particle.h>
 #include <vector>
-#include "Plane.h"
+#include <memory>
+#include <Plane.h>
 
 class ParticleSystem
 {

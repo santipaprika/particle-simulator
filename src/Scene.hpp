@@ -25,6 +25,7 @@ class Scene {
 
     // Update
     void updateScene(float dt);
+    void spawnParticles(std::shared_ptr<ParticleSystem> particleSystem);
 
    private:
     std::vector<Entity> entities;

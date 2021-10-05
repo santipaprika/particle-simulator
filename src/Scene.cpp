@@ -83,8 +83,34 @@ void Scene::loadCameraSkybox() {
 }
 
 void Scene::loadParticles() {
-    // One particle
+    // Create particle system
+    auto particleSystemRoot = Entity::createEntity();
+    particleSystemRoot.particleSystem = std::make_shared<ParticleSystem>();
+    particleSystemRoot.particleSystem->setParticleSystem(10);
+    particleSystemRoot.particleSystem->iniParticleSystem(ParticleSystem::ParticleSystemType::Fountain);
 
+    spawnParticles(particleSystemRoot.particleSystem);
+    entities.push_back(std::move(particleSystemRoot));
+
+}
+
+void Scene::updateScene(float dt) {
+    for (auto& entity : entities)
+        entity.update(dt);
+
+    // static float counter = 0;
+    // counter += dt;
+
+    // if (counter > 5) {
+    //     for (auto& entity : entities) {
+    //         if (entity.particleSystem)
+    //             spawnParticles(entity.particleSystem);
+    //     }
+    //     counter = 0;
+    // }
+}
+
+void Scene::spawnParticles(std::shared_ptr<ParticleSystem> particleSystem) {
     std::string textures_path(TEXTURES_PATH);
     std::shared_ptr<Texture> texture = Texture::createTextureFromFile(device, (textures_path + "/test.jpg"));
     std::shared_ptr<Material> material = std::make_shared<Material>(texture);
@@ -93,34 +119,19 @@ void Scene::loadParticles() {
     std::shared_ptr<Mesh> mesh =
         Mesh::createModelFromFile(device, (models_path + "/sphere.obj").c_str());
 
-    // ParticleSystem particleSystem;
-    // particleSystem.setParticleSystem(10);
-    // particleSystem.iniParticleSystem(ParticleSystem::ParticleSystemType::Fountain);
-
-    // for (int i = 0; i < 10; i++) {
-    //     auto p = Entity::createEntity();
-    //     p.transform.translation = particleSystem.getParticle(i).getCurrentPosition();
-    //     p.transform.scale = glm::vec3(0.1f, 0.1f, 0.1f);
-    // }
-    // for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {
         auto p = Entity::createEntity();
-        p.particle = std::make_shared<Particle>(0.0f, 2.0f, 0.0f);
-        p.particle->setLifetime(7.0f);
-        //	p.setFixed(true);
+        p.particle = std::make_shared<Particle>(particleSystem->getParticle(i));
+        p.transform.translation = p.particle->getCurrentPosition();
+        p.transform.scale = glm::vec3(0.1f, 0.1f, 0.1f);
         p.particle->setBouncing(0.8f);
         p.particle->addForce(0, -9.8f, 0);
-
         p.mesh = mesh;
         p.material = material;
-        p.transform.translation = {0.0f, 10.0f, 0.0f};
-        p.transform.scale = {0.1f, 0.1f, 0.1f};
         entities.push_back(std::move(p));
-    // }
-}
-
-void Scene::updateScene(float dt) {
-    for (auto& entity : entities)
-        entity.update(dt);
+        // p.particle->setLifetime(7.0f);
+        //	p.setFixed(true);
+    }
 }
 
 }  // namespace vkr

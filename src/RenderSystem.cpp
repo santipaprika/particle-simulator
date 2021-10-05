@@ -49,7 +49,8 @@ RenderSystem::~RenderSystem() {
     vkDestroyDescriptorPool(device.device(), descriptorPool, nullptr);
 
     for (auto& entity : scene.getEntities()) {
-        entity.material->getAlbedo()->destroy();
+        if (entity.material)
+            entity.material->getAlbedo()->destroy();
     }
 
     if (scene.getMainCamera().hasSkybox())
@@ -211,7 +212,8 @@ void RenderSystem::createDescriptorPool(const std::vector<PoolSize>& poolSizes, 
 
 void RenderSystem::createDescriptorSets() {
     for (auto& entity : scene.getEntities()) {
-        updateDescriptorSet(entity);
+        if ((entity.mesh && entity.material) || entity.hair )
+            updateDescriptorSet(entity);
     }
     if (scene.getMainCamera().hasSkybox())
         updateDescriptorSet(scene.getMainCamera().getSkybox());

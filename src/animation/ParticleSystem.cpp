@@ -41,7 +41,7 @@ void ParticleSystem::iniParticleSystem(ParticleSystemType systemType){
 		{
            for (int i = 0; i < m_numParticles; i++)
 		   {
-			   m_particleSystem[i].setPosition(0, 0, 0);
+			   m_particleSystem[i].setPosition(0, 5, 0);
 			   m_particleSystem[i].setVelocity(2 * (rand01() - 0.5), 5, 2 * rand01());
 		   }
 		}

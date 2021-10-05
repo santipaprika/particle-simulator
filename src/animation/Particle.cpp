@@ -1,5 +1,6 @@
-#include "Particle.h"
+#include <Particle.h>
 
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
 
 //Particle::Particle()
