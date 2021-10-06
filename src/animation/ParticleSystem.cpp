@@ -4,7 +4,7 @@
 
 #define rand01() ((float)std::rand() / RAND_MAX)
 
-ParticleSystem::ParticleSystem() : m_spawnFrequency(2.f) {
+ParticleSystem::ParticleSystem() : m_spawnTime(0.5f) {
 }
 
 ParticleSystem::~ParticleSystem() {

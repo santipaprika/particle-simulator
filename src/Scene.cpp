@@ -94,11 +94,11 @@ void Scene::loadParticles() {
 }
 
 void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout) {
-    int idx=0;
+    int idx = 0;
     for (auto& entity : entities) {
         if (!entity.update(dt)) {
             vkQueueWaitIdle(device.graphicsQueue());
-            entities.erase(entities.begin()+idx);
+            entities.erase(entities.begin() + idx);
         }
         idx++;
     }
@@ -106,20 +106,21 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
     static float counter = 0;
     counter += dt;
 
-    if (counter > 5) {
-        for (int i = 0; i < entities.size(); i++) {
-            if (entities[i].particleSystem) {
-                std::shared_ptr<ParticleSystem> particleSystem = entities[i].particleSystem;
-                spawnParticles(particleSystem);
+    for (int i = 0; i < entities.size(); i++) {
+        if (entities[i].particleSystem) {
+            if (counter < entities[i].particleSystem->getSpawnTime()) continue;
 
-                // Create buffers and sets for the new particle entities (last S entities where S=number of particles per spawn)
-                for (size_t j = entities.size() - particleSystem->getNumParticlesPerSpawn(); j < entities.size(); j++) {
-                    entities[j].createUniformBuffer(device);
-                    entities[j].updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
-                }
+            std::shared_ptr<ParticleSystem> particleSystem = entities[i].particleSystem;
+            spawnParticles(particleSystem);
+
+            // Create buffers and sets for the new particle entities (last S entities where S=number of particles per spawn)
+            for (size_t j = entities.size() - particleSystem->getNumParticlesPerSpawn(); j < entities.size(); j++) {
+                entities[j].createUniformBuffer(device);
+                entities[j].updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
             }
+            
+            counter = 0;
         }
-        counter = 0;
     }
 }
 

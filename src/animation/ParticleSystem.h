@@ -16,10 +16,11 @@ public:
 	void updateParticleSystem(const float& dt, Particle::UpdateMethod method);
     size_t getNumParticles() { return m_particleSystem.size(); }
     int getNumParticlesPerSpawn() { return m_numParticles; }
+    float getSpawnTime() { return m_spawnTime; }
 
 private:
 	int m_numParticles;
-    float m_spawnFrequency;
+    float m_spawnTime;
 	std::vector<Particle> m_particleSystem;
     ParticleSystemType type { ParticleSystemType::Fountain };
 };
