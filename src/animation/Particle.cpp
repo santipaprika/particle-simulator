@@ -165,6 +165,8 @@ glm::vec3 Particle::updateInScene(float frameTime) {
         }
     }
 
+    m_currentTime += frameTime;
+
     return m_currentPosition;
 }
 

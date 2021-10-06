@@ -23,20 +23,17 @@ namespace vkr {
 
 RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, Scene& scene, bool useMSAA)
     : device{device}, scene{scene} {
-    createUniformBuffers();
-    setupDescriptors();
+    initializeEntities();
 
     createPipelineLayout();
     createPipeline(renderPass, useMSAA);
 }
 
 void RenderSystem::setupDescriptors() {
-    createDescriptorSetLayout();
-
     uint32_t entitiesCount = static_cast<uint32_t>(scene.getEntities().size() + 1);  // +1 from skybox
-    std::vector<PoolSize> poolSizes = {PoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, entitiesCount},
-                                       PoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, entitiesCount}};
-    createDescriptorPool(poolSizes, entitiesCount);
+    std::vector<PoolSize> poolSizes = {PoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                                       PoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000}};
+    createDescriptorPool(poolSizes, 1000);
 
     createDescriptorSets();
 }
@@ -158,36 +155,18 @@ void RenderSystem::createUniformBuffers() {
 
     // Triangle meshes
     for (auto& entity : scene.getEntities()) {
-        entity.uboBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        for (auto& uboBuffer : entity.uboBuffers) {
-            uboBuffer = std::make_unique<Buffer>(device, bufferSize, 1,
-                                                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                 device.properties.limits.minUniformBufferOffsetAlignment);
-            uboBuffer->map();
-        }
+        entity.createUniformBuffer(device);
     }
 
     // Lights
     for (auto& lightEntity : scene.getLightEntities()) {
         // Create light specific UBO
-        lightEntity.uboBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        for (auto& uboBuffer : lightEntity.uboBuffers) {
-            uboBuffer = std::make_unique<Buffer>(device, lightBufferSize, 1,
-                                                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                 device.properties.limits.minUniformBufferOffsetAlignment);
-            uboBuffer->map();
-        }
+        lightEntity.createUniformBuffer(device);
     }
 
     // Skybox
     if (scene.getMainCamera().hasSkybox()) {
-        scene.getMainCamera().getSkybox().uboBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        for (auto& uboBuffer : scene.getMainCamera().getSkybox().uboBuffers) {
-            uboBuffer = std::make_unique<Buffer>(device, bufferSize, 1,
-                                                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                 device.properties.limits.minUniformBufferOffsetAlignment);
-            uboBuffer->map();
-        }
+        scene.getMainCamera().getSkybox().createUniformBuffer(device);
     }
 }
 
@@ -213,52 +192,10 @@ void RenderSystem::createDescriptorPool(const std::vector<PoolSize>& poolSizes, 
 void RenderSystem::createDescriptorSets() {
     for (auto& entity : scene.getEntities()) {
         if ((entity.mesh && entity.material) || entity.hair )
-            updateDescriptorSet(entity);
+            entity.updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
     }
     if (scene.getMainCamera().hasSkybox())
-        updateDescriptorSet(scene.getMainCamera().getSkybox());
-}
-
-void RenderSystem::updateDescriptorSet(Entity& entity) {
-    // Allocates an empty descriptor set without actual descriptors from the pool using the set layout
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    // This is for each entity. Even if there are two bindings per object, these are contained in a single descriptor.
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descriptorSetLayout;
-
-    if (vkAllocateDescriptorSets(device.device(), &allocInfo, &entity.descriptorSet) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate descriptor sets!");
-    }
-
-    // Update the descriptor set with the actual descriptors matching shader bindings set in the layout
-
-    // Binding 0: Object matrices uniform buffer
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[0].dstSet = entity.descriptorSet;
-    descriptorWrites[0].dstBinding = 0;
-    descriptorWrites[0].dstArrayElement = 0;
-
-    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrites[0].descriptorCount = 1;
-
-    descriptorWrites[0].pBufferInfo = &entity.uboBuffers[0]->descriptorInfo(sizeof(EntityUBO));
-
-    // Binding 1: Object texture
-    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[1].dstSet = entity.descriptorSet;
-    descriptorWrites[1].dstBinding = 1;
-    descriptorWrites[1].dstArrayElement = 0;
-    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrites[1].descriptorCount = 1;
-
-    descriptorWrites[1].pImageInfo = &entity.material->getAlbedo()->getDescriptorInfo();
-
-    // Binding 2: Lights
-
-    vkUpdateDescriptorSets(device.device(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        scene.getMainCamera().getSkybox().updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
 }
 
 void RenderSystem::renderEntities(FrameInfo frameInfo) {
@@ -307,6 +244,12 @@ void RenderSystem::renderEntities(FrameInfo frameInfo) {
 
 void RenderSystem::recreatePipelines(VkRenderPass renderPass, bool useMSAA) {
     createPipeline(renderPass, useMSAA);
+}
+
+void RenderSystem::initializeEntities() {
+    createUniformBuffers();
+    createDescriptorSetLayout();
+    setupDescriptors();
 }
 
 }  // namespace vkr

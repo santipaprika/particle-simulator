@@ -63,7 +63,7 @@ class Entity {
 
     id_t getId() { return id; }
 
-    void update(float dt);
+    bool update(float dt);
     void render(glm::mat4 camProjectionView, FrameInfo& frameInfo, VkPipelineLayout pipelineLayout);
 
     TransformComponent transform{};
@@ -80,6 +80,9 @@ class Entity {
 
     // Transform specific uniform buffer
     std::vector<std::unique_ptr<Buffer>> uboBuffers;
+
+    void createUniformBuffer(Device& device);
+    void updateDescriptorSet(Device& device, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout);
 
    private:
     Entity(id_t objId) : id{objId} {}

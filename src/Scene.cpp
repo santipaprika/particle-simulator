@@ -87,49 +87,66 @@ void Scene::loadParticles() {
     auto particleSystemRoot = Entity::createEntity();
     particleSystemRoot.particleSystem = std::make_shared<ParticleSystem>();
     particleSystemRoot.particleSystem->setParticleSystem(10);
-    particleSystemRoot.particleSystem->iniParticleSystem(ParticleSystem::ParticleSystemType::Fountain);
+    // particleSystemRoot.particleSystem->iniParticleSystem();
 
     spawnParticles(particleSystemRoot.particleSystem);
     entities.push_back(std::move(particleSystemRoot));
-
 }
 
-void Scene::updateScene(float dt) {
-    for (auto& entity : entities)
-        entity.update(dt);
+void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout) {
+    int idx=0;
+    for (auto& entity : entities) {
+        if (!entity.update(dt)) {
+            vkQueueWaitIdle(device.graphicsQueue());
+            entities.erase(entities.begin()+idx);
+        }
+        idx++;
+    }
 
-    // static float counter = 0;
-    // counter += dt;
+    static float counter = 0;
+    counter += dt;
 
-    // if (counter > 5) {
-    //     for (auto& entity : entities) {
-    //         if (entity.particleSystem)
-    //             spawnParticles(entity.particleSystem);
-    //     }
-    //     counter = 0;
-    // }
+    if (counter > 5) {
+        for (int i = 0; i < entities.size(); i++) {
+            if (entities[i].particleSystem) {
+                std::shared_ptr<ParticleSystem> particleSystem = entities[i].particleSystem;
+                spawnParticles(particleSystem);
+
+                // Create buffers and sets for the new particle entities (last S entities where S=number of particles per spawn)
+                for (size_t j = entities.size() - particleSystem->getNumParticlesPerSpawn(); j < entities.size(); j++) {
+                    entities[j].createUniformBuffer(device);
+                    entities[j].updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
+                }
+            }
+        }
+        counter = 0;
+    }
 }
 
 void Scene::spawnParticles(std::shared_ptr<ParticleSystem> particleSystem) {
     std::string textures_path(TEXTURES_PATH);
-    std::shared_ptr<Texture> texture = Texture::createTextureFromFile(device, (textures_path + "/test.jpg"));
+    std::shared_ptr<Texture> texture = Texture::createTextureFromFile(device, (textures_path + "/blank.jpg"));
     std::shared_ptr<Material> material = std::make_shared<Material>(texture);
 
     std::string models_path(MODELS_PATH);
     std::shared_ptr<Mesh> mesh =
         Mesh::createModelFromFile(device, (models_path + "/sphere.obj").c_str());
 
-    for (int i = 0; i < 10; i++) {
+    particleSystem->iniParticleSystem();
+
+    for (int i = 0; i < particleSystem->getNumParticlesPerSpawn(); i++) {
         auto p = Entity::createEntity();
-        p.particle = std::make_shared<Particle>(particleSystem->getParticle(i));
+
+        int offset = particleSystem->getNumParticles() - particleSystem->getNumParticlesPerSpawn();
+        p.particle = std::make_shared<Particle>(particleSystem->getParticle(i + offset));
         p.transform.translation = p.particle->getCurrentPosition();
         p.transform.scale = glm::vec3(0.1f, 0.1f, 0.1f);
         p.particle->setBouncing(0.8f);
         p.particle->addForce(0, -9.8f, 0);
         p.mesh = mesh;
         p.material = material;
+        p.particle->setLifetime(7.0f);
         entities.push_back(std::move(p));
-        // p.particle->setLifetime(7.0f);
         //	p.setFixed(true);
     }
 }

@@ -24,7 +24,7 @@ class Scene {
     Camera& getMainCamera() { return mainCamera; }
 
     // Update
-    void updateScene(float dt);
+    void updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout);
     void spawnParticles(std::shared_ptr<ParticleSystem> particleSystem);
 
    private:

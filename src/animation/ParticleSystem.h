@@ -12,11 +12,15 @@ public:
 	~ParticleSystem();
 	void setParticleSystem(int numParticles);
 	Particle getParticle(int i);
-	void iniParticleSystem(ParticleSystemType systemType);
+	void iniParticleSystem();
 	void updateParticleSystem(const float& dt, Particle::UpdateMethod method);
+    size_t getNumParticles() { return m_particleSystem.size(); }
+    int getNumParticlesPerSpawn() { return m_numParticles; }
 
 private:
 	int m_numParticles;
+    float m_spawnFrequency;
 	std::vector<Particle> m_particleSystem;
+    ParticleSystemType type { ParticleSystemType::Fountain };
 };
 

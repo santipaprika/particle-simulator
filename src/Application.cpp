@@ -61,7 +61,8 @@ void Application::run() {
 
         ImGui::End();
 
-        ImGui::ShowDemoWindow();
+        // ImGui::ShowDemoWindow();
+        ImGui::ShowMetricsWindow();
         ImGui::Render();
 
         auto newTime = std::chrono::high_resolution_clock::now();
@@ -71,7 +72,7 @@ void Application::run() {
 
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
         scene.getMainCamera().update(viewerObject.transform, renderer.getAspectRatio());
-        scene.updateScene(frameTime);
+        scene.updateScene(frameTime, renderSystem.getDescriptorPool(), renderSystem.getDescriptorSetLayout());
 
         if (auto commandBuffer = renderer.beginFrame()) {
             FrameInfo frameInfo{renderer.getFrameIndex(), frameTime, commandBuffer, scene.getMainCamera()};
@@ -94,6 +95,7 @@ void Application::run() {
             }
         }
 
+        // If MSAA is enabled/disabled recreate Swapchain and Pipelines (3->2 / 2->3 images)
         if (switchedMSAA) {
             renderer.recreateSwapChain(useMSAA);
             renderSystem.recreatePipelines(renderer.getSwapChainRenderPass(), useMSAA);

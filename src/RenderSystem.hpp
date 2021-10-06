@@ -36,6 +36,11 @@ class RenderSystem {
 
     void renderEntities(FrameInfo frameInfo);
     void recreatePipelines(VkRenderPass renderPass, bool useMSAA = true);
+    void initializeEntities();
+
+    // Getters
+    VkDescriptorPool& getDescriptorPool() { return descriptorPool; } 
+    VkDescriptorSetLayout& getDescriptorSetLayout() { return descriptorSetLayout; } 
 
    private:
     void createDescriptorSetLayout();
@@ -45,8 +50,6 @@ class RenderSystem {
 
     void createPipelineLayout();
     void createPipeline(VkRenderPass renderPass, bool useMSAA = true);
-
-    void updateDescriptorSet(Entity& entity);
 
     Device &device;
 
@@ -58,6 +61,8 @@ class RenderSystem {
     Scene& scene;
 
     VkDescriptorPool descriptorPool;
+
+    int entitiesLoadedCount {0};
 
     void *data;
 };

@@ -33,6 +33,7 @@ public:
 	glm::vec3 getVelocity();
 	float getBouncing();
 	float getLifetime();
+    bool isDead() { return m_currentTime >= m_lifetime; }
 	bool isFixed();
 
 	//other
@@ -52,6 +53,7 @@ private:
 
 	float m_bouncing;
 	float m_lifetime;
+    float m_currentTime{0};
     float m_dt;
 	bool  m_fixed;
 
