@@ -6,13 +6,14 @@
 
 #pragma once
 
+#include <Particle.h>
+#include <ParticleSystem.h>
+
 #include <Buffer.hpp>
 #include <Hair.hpp>
 #include <Light.hpp>
 #include <Material.hpp>
 #include <Mesh.hpp>
-#include <Particle.h>
-#include <ParticleSystem.h>
 
 // libs
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,6 +23,7 @@
 
 namespace vkr {
 struct FrameInfo;
+class Scene;
 
 struct TransformComponent {
     glm::vec3 translation{};
@@ -56,14 +58,14 @@ class Entity {
         return Entity{currentId++};
     }
 
-    Entity(const Entity &) = delete;
-    Entity &operator=(const Entity &) = delete;
-    Entity(Entity &&) = default;
-    Entity &operator=(Entity &&) = default;
+    Entity(const Entity&) = delete;
+    Entity& operator=(const Entity&) = delete;
+    Entity(Entity&&) = default;
+    Entity& operator=(Entity&&) = default;
 
     id_t getId() { return id; }
 
-    bool update(float dt);
+    bool update(float dt, std::vector<std::shared_ptr<Entity>> &kinematicEntities);
     void render(glm::mat4 camProjectionView, FrameInfo& frameInfo, VkPipelineLayout pipelineLayout);
 
     TransformComponent transform{};
@@ -75,6 +77,8 @@ class Entity {
     std::shared_ptr<Light> light{nullptr};
     std::shared_ptr<Particle> particle{nullptr};
     std::shared_ptr<ParticleSystem> particleSystem{nullptr};
+    std::shared_ptr<Plane> plane{nullptr};
+    bool isKinematic{false};
 
     VkDescriptorSet descriptorSet;
 

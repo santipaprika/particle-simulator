@@ -46,8 +46,8 @@ RenderSystem::~RenderSystem() {
     vkDestroyDescriptorPool(device.device(), descriptorPool, nullptr);
 
     for (auto& entity : scene.getEntities()) {
-        if (entity.material)
-            entity.material->getAlbedo()->destroy();
+        if (entity->material)
+            entity->material->getAlbedo()->destroy();
     }
 
     if (scene.getMainCamera().hasSkybox())
@@ -155,13 +155,13 @@ void RenderSystem::createUniformBuffers() {
 
     // Triangle meshes
     for (auto& entity : scene.getEntities()) {
-        entity.createUniformBuffer(device);
+        entity->createUniformBuffer(device);
     }
 
     // Lights
     for (auto& lightEntity : scene.getLightEntities()) {
         // Create light specific UBO
-        lightEntity.createUniformBuffer(device);
+        lightEntity->createUniformBuffer(device);
     }
 
     // Skybox
@@ -183,6 +183,7 @@ void RenderSystem::createDescriptorPool(const std::vector<PoolSize>& poolSizes, 
     poolInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
     poolInfo.pPoolSizes = descriptorPoolSizes.data();
     poolInfo.maxSets = maxSets;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     if (vkCreateDescriptorPool(device.device(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
@@ -191,8 +192,8 @@ void RenderSystem::createDescriptorPool(const std::vector<PoolSize>& poolSizes, 
 
 void RenderSystem::createDescriptorSets() {
     for (auto& entity : scene.getEntities()) {
-        if ((entity.mesh && entity.material) || entity.hair )
-            entity.updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
+        if ((entity->mesh && entity->material) || entity->hair )
+            entity->updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
     }
     if (scene.getMainCamera().hasSkybox())
         scene.getMainCamera().getSkybox().updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
@@ -206,20 +207,20 @@ void RenderSystem::renderEntities(FrameInfo frameInfo) {
     // TRIANGULAR MESHES
     pipelines->meshes->bind(commandBuffer);
     for (auto& entity : scene.getEntities()) {
-        if (!entity.mesh) continue;
-        entity.render(projectionView, frameInfo, pipelineLayout);
+        if (!entity->mesh) continue;
+        entity->render(projectionView, frameInfo, pipelineLayout);
     }
 
     // HAIR (LINES)
     pipelines->hair->bind(commandBuffer);
     for (auto& entity : scene.getEntities()) {
-        if (!entity.hair) continue;
+        if (!entity->hair) continue;
 
-        auto modelMatrix = entity.transform.mat4();
-        EntityUBO entityUBO = {projectionView, modelMatrix, entity.transform.normalMatrix(), frameInfo.camera.getPosition()};
+        auto modelMatrix = entity->transform.mat4();
+        EntityUBO entityUBO = {projectionView, modelMatrix, entity->transform.normalMatrix(), frameInfo.camera.getPosition()};
 
-        entity.uboBuffers[frameInfo.frameIndex]->writeToBuffer(&entityUBO);
-        entity.uboBuffers[frameInfo.frameIndex]->flush();
+        entity->uboBuffers[frameInfo.frameIndex]->writeToBuffer(&entityUBO);
+        entity->uboBuffers[frameInfo.frameIndex]->flush();
 
         SimplePushConstantData push{0.1f};
         vkCmdPushConstants(
@@ -230,9 +231,9 @@ void RenderSystem::renderEntities(FrameInfo frameInfo) {
             sizeof(SimplePushConstantData),
             &push);
 
-        entity.hair->bind(commandBuffer);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &entity.descriptorSet, 0, nullptr);
-        entity.hair->draw(commandBuffer);
+        entity->hair->bind(commandBuffer);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &entity->descriptorSet, 0, nullptr);
+        entity->hair->draw(commandBuffer);
     }
 
     // SKYBOX

@@ -9,7 +9,9 @@ Plane::~Plane()
 }
 
 glm::vec3 Plane::setPlanePoint(const float& x, const float& y, const float& z){
-	return glm::vec3(x, y, z);
+	point = glm::vec3(x, y, z);
+    d = -glm::dot(point, normal);
+    return point;
 }
 
 glm::vec3 Plane::setPlaneDirect1(const float& x, const float& y, const float& z){

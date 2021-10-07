@@ -98,7 +98,7 @@ void Camera::loadSkybox(Device& device) {
     skybox.mesh = Mesh::createModelFromFile(device, (models_path + "/cube.obj").c_str());
 
     std::string textures_path(TEXTURES_PATH);
-    std::shared_ptr<Texture> skyboxCubemap = Texture::createCubemapFromFile(device, (textures_path + "/cubemaps/Maskonaive/"));
+    std::shared_ptr<Texture> skyboxCubemap = Texture::createCubemapFromFile(device, (textures_path + "/cubemaps/Bridge/"));
     skybox.material = std::make_shared<Material>(skyboxCubemap);
 
     skyboxEnabled = true;

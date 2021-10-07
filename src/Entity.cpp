@@ -8,6 +8,7 @@
 
 #include <Entity.hpp>
 #include <FrameInfo.hpp>
+#include <Scene.hpp>
 #include <SwapChain.hpp>
 #include <stdexcept>
 
@@ -23,19 +24,19 @@ glm::mat4 TransformComponent::mat4() {
     return glm::mat4{
         {
             scale.x * (c1 * c3 + s1 * s2 * s3),
-            scale.x * (c2 * s3),
-            scale.x * (c1 * s2 * s3 - c3 * s1),
+            scale.y * (c2 * s3),
+            scale.z * (c1 * s2 * s3 - c3 * s1),
             0.0f,
         },
         {
-            -scale.y * (c3 * s1 * s2 - c1 * s3),
+            -scale.x * (c3 * s1 * s2 - c1 * s3),
             -scale.y * (c2 * c3),
-            -scale.y * (c1 * c3 * s2 + s1 * s3),
+            -scale.z * (c1 * c3 * s2 + s1 * s3),
             0.0f,
         },
         {
-            -scale.z * (c2 * s1),
-            -scale.z * (-s2),
+            -scale.x * (c2 * s1),
+            -scale.y * (-s2),
             -scale.z * (c1 * c2),
             0.0f,
         },
@@ -53,27 +54,27 @@ glm::mat3 TransformComponent::normalMatrix() {
 
     return glm::mat3{
         {
-            invScale.x * (c1 * c3 + s1 * s2 * s3),
-            invScale.x * (c2 * s3),
-            invScale.x * (c1 * s2 * s3 - c3 * s1),
+            -invScale.x * (c1 * c3 + s1 * s2 * s3),
+            -invScale.y * (c2 * s3),
+            -invScale.z * (c1 * s2 * s3 - c3 * s1),
         },
         {
-            invScale.y * (c3 * s1 * s2 - c1 * s3),
+            invScale.x * (c3 * s1 * s2 - c1 * s3),
             invScale.y * (c2 * c3),
-            invScale.y * (c1 * c3 * s2 + s1 * s3),
+            invScale.z * (c1 * c3 * s2 + s1 * s3),
         },
         {
-            invScale.z * (c2 * s1),
-            invScale.z * (-s2),
+            invScale.x * (c2 * s1),
+            invScale.y * (-s2),
             invScale.z * (c1 * c2),
         },
     };
 }
 
 // If update returns false the entity should be removed from the scene
-bool Entity::update(float dt) {
+bool Entity::update(float dt, std::vector<std::shared_ptr<Entity>> &kinematicEntities) {
     if (particle) {
-        transform.translation = particle->updateInScene(dt);    // this updates lifetime too
+        transform.translation = particle->updateInScene(dt, kinematicEntities);  // this updates lifetime too
         return !particle->isDead();
     }
 

@@ -16,7 +16,7 @@ layout (binding = 0) uniform UniformBufferObject {
 layout(binding = 1) uniform sampler2D texSampler;
 
 
-const vec3 DIRECTION_TO_LIGHT = normalize(vec3(1.0, -3.0, -1.0));
+const vec3 DIRECTION_TO_LIGHT = normalize(vec3(-1.0,-2.0,0.0));
 vec3 AMBIENT = vec3(0.1);
 
 layout(push_constant) uniform Push {

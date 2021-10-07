@@ -1,11 +1,7 @@
 #include <Particle.h>
 
+#include <Entity.hpp>
 #include <glm/gtx/string_cast.hpp>
-#include <iostream>
-
-//Particle::Particle()
-//{
-//}
 
 Particle::Particle() : m_currentPosition(0, 0, 0), m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(1), m_lifetime(50), m_fixed(false), m_dt(0.0001f) {
 }
@@ -148,20 +144,20 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
     return;
 }
 
-glm::vec3 Particle::updateInScene(float frameTime) {
+glm::vec3 Particle::updateInScene(float frameTime, std::vector<std::shared_ptr<vkr::Entity>>& kinematicEntities) {
     int numSteps = static_cast<int>(std::round(frameTime / m_dt));
 
-    // animation loop
     for (int step = 1; step < numSteps; step++) {
         // call solver types: EulerOrig, EulerSemi and Verlet(to be implemented)
         updateParticle(m_dt, Particle::UpdateMethod::EulerSemi);
 
-        Plane plane;
-        plane.setPlaneNormal(0, 1, 0);
-        plane.setPlanePoint(0, 0, 0);
-        //Check Floor collisions
-        if (collisionParticlePlane(plane)) {
-            correctCollisionParticlePlain(plane);
+        //Check collisions
+        for (int i = 0; i < kinematicEntities.size(); i++) {
+            if (!kinematicEntities[i]->plane) continue;
+
+            if (collisionParticlePlane(*kinematicEntities[i]->plane)) {
+                correctCollisionParticlePlain(*kinematicEntities[i]->plane);
+            }
         }
     }
 
@@ -183,5 +179,5 @@ bool Particle::collisionParticlePlane(Plane p) {
 
 void Particle::correctCollisionParticlePlain(Plane p) {
     m_currentPosition = m_currentPosition - (1 + m_bouncing) * (glm::dot(m_currentPosition, p.normal) + p.d) * p.normal;
-    m_velocity = m_velocity - (1 + m_bouncing) * (glm::dot(m_velocity, p.normal) + p.d) * p.normal;
+    m_velocity = m_velocity - (1 + m_bouncing) * (glm::dot(m_velocity, p.normal)) * p.normal;
 }
