@@ -106,7 +106,7 @@ void Scene::initializeKinematicEntities() {
                                                                                                         vertices[i + 1].position - vertices[i].position)));
                     std::shared_ptr<Plane> trianglePlane = std::make_shared<Plane>();
                     trianglePlane->setPlaneNormal(normal.x, normal.y, normal.z);
-                    glm::vec3 offset = particleSize * normal;
+                    glm::vec3 offset = particleSize * normal * 0.99f;
 
                     entity->triangleColliderVertices[0] = offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[i].position, 1.f));
                     entity->triangleColliderVertices[1] = offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[i + 1].position, 1.f));
