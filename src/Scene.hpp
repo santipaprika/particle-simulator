@@ -30,7 +30,9 @@ class Scene {
 
    private:
     std::vector<std::shared_ptr<Entity>> entities;
-    std::vector<std::shared_ptr<Entity>> kinematicEntities;
+    std::vector<std::shared_ptr<Entity>> kinematicPlaneEntities;
+    std::vector<std::shared_ptr<Entity>> kinematicTriangleEntities;
+    std::vector<std::shared_ptr<Entity>> kinematicSphereEntities;
     std::vector<std::shared_ptr<Entity>> lights;
     std::vector<Texture> textures;
     Camera mainCamera;
@@ -38,6 +40,9 @@ class Scene {
     Device& device;
 
     std::shared_ptr<Material> blankMaterial;
+    std::shared_ptr<Material> particleMaterial;
+
+    std::shared_ptr<Mesh> sphereMesh;
     void createBox();
 };
 

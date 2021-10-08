@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <Device.hpp>
 #include <Buffer.hpp>
+#include <Device.hpp>
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -49,11 +49,16 @@ class Mesh {
     Mesh(const Mesh &) = delete;
     Mesh &operator=(const Mesh &) = delete;
 
+    // Generators
     static std::unique_ptr<Mesh> createModelFromFile(
         Device &device, const std::string &filepath);
+    static std::unique_ptr<Mesh> createTriangle(Device &device);
 
-    void bind(VkCommandBuffer commandBuffer);
+        void bind(VkCommandBuffer commandBuffer);
     void draw(VkCommandBuffer commandBuffer);
+
+    // Getters
+    const Builder& getBuilder() { return builder; }
 
    private:
     void createVertexBuffers(const std::vector<Vertex> &vertices);
@@ -67,5 +72,7 @@ class Mesh {
     bool hasIndexBuffer = false;
     std::unique_ptr<Buffer> indexBuffer;
     uint32_t indexCount;
+
+    Builder builder;
 };
 }  // namespace vkr

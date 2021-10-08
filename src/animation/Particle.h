@@ -2,8 +2,8 @@
 #include <Plane.h>
 
 #include <glm\glm.hpp>
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace vkr {
 class Entity;
@@ -47,13 +47,19 @@ class Particle {
     void addForce(glm::vec3 force);
     void addForce(const float& x, const float& y, const float& z);
     void updateParticle(const float& dt, UpdateMethod method = UpdateMethod::EulerOrig);
-    glm::vec3 Particle::updateInScene(float frameTime, std::vector<std::shared_ptr<vkr::Entity>>& kinematicEntities);
-    bool collisionParticlePlane(Plane p);
-    void correctCollisionParticlePlain(Plane p);
+    glm::vec3 Particle::updateInScene(float frameTime, std::vector<std::shared_ptr<vkr::Entity>>& kinematicPlaneEntities,
+                                      std::vector<std::shared_ptr<vkr::Entity>>& kinematicTriangleEntities,
+                                      std::vector<std::shared_ptr<vkr::Entity>>& kinematicSphereEntities);
+    bool collisionParticlePlane(Plane &p);
+    bool collisionParticleTriangle(Plane &p, std::array<glm::vec3, 3> &vertices);
+    void correctCollisionParticlePlain(Plane &p);
+
+    float computeTriangleArea(glm::vec3 edge1, glm::vec3 edge2);
 
    private:
     glm::vec3 m_currentPosition;
     glm::vec3 m_previousPosition;
+    glm::vec3 m_previousPreviousPosition;
     glm::vec3 m_force;
     glm::vec3 m_velocity;
 
@@ -62,4 +68,6 @@ class Particle {
     float m_currentTime{0};
     float m_dt;
     bool m_fixed;
+
+    bool m_firstUpdate{true};
 };

@@ -217,7 +217,7 @@ void RenderSystem::renderEntities(FrameInfo frameInfo) {
         if (!entity->hair) continue;
 
         auto modelMatrix = entity->transform.mat4();
-        EntityUBO entityUBO = {projectionView, modelMatrix, entity->transform.normalMatrix(), frameInfo.camera.getPosition()};
+        EntityUBO entityUBO = {projectionView, modelMatrix, entity->transform.normalMatrix(), glm::vec4(1.f), frameInfo.camera.getPosition()};
 
         entity->uboBuffers[frameInfo.frameIndex]->writeToBuffer(&entityUBO);
         entity->uboBuffers[frameInfo.frameIndex]->flush();

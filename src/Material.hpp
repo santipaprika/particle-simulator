@@ -15,6 +15,8 @@ class Material {
 
     std::shared_ptr<Texture> getAlbedo() { return (_albedo); }
     bool hasAlbedo() { return _albedo != nullptr; }
+    glm::vec4 getDiffuseColor() { return _diffuseColor; }
+    void setDiffuseColor(glm::vec4 color) { _diffuseColor = color; }
 
    private:
     std::shared_ptr<Texture> _albedo {nullptr};

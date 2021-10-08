@@ -19,6 +19,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // std
+#include <array>
 #include <memory>
 
 namespace vkr {
@@ -42,6 +43,7 @@ struct EntityUBO {
     glm::mat4 projectionView;
     glm::mat4 model;
     glm::mat4 normalMatrix;
+    glm::vec4 color;
     glm::vec3 camPos;
 };
 
@@ -51,6 +53,10 @@ struct SimplePushConstantData {
 
 class Entity {
    public:
+    enum ColliderType { NONE,
+                        PLANE,
+                        TRIANGLE,
+                        SPHERE };
     using id_t = unsigned int;
 
     static Entity createEntity() {
@@ -65,7 +71,9 @@ class Entity {
 
     id_t getId() { return id; }
 
-    bool update(float dt, std::vector<std::shared_ptr<Entity>> &kinematicEntities);
+    bool update(float dt, std::vector<std::shared_ptr<Entity>>& kinematicPlaneEntities,
+                std::vector<std::shared_ptr<Entity>>& kinematicTriangleEntities,
+                std::vector<std::shared_ptr<Entity>>& kinematicSphereEntities);
     void render(glm::mat4 camProjectionView, FrameInfo& frameInfo, VkPipelineLayout pipelineLayout);
 
     TransformComponent transform{};
@@ -78,7 +86,9 @@ class Entity {
     std::shared_ptr<Particle> particle{nullptr};
     std::shared_ptr<ParticleSystem> particleSystem{nullptr};
     std::shared_ptr<Plane> plane{nullptr};
-    bool isKinematic{false};
+
+    ColliderType colliderType{NONE};
+    std::array<glm::vec3, 3> triangleColliderVertices;
 
     VkDescriptorSet descriptorSet;
 

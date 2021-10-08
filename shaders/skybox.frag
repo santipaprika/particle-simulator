@@ -11,6 +11,7 @@ layout (binding = 0) uniform UniformBufferObject {
     mat4 projectionView;
     mat4 model;
     mat4 normalMatrix;
+    vec4 matColor;
     vec3 camPos;
 } ubo;
 

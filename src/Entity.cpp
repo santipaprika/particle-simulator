@@ -72,9 +72,13 @@ glm::mat3 TransformComponent::normalMatrix() {
 }
 
 // If update returns false the entity should be removed from the scene
-bool Entity::update(float dt, std::vector<std::shared_ptr<Entity>> &kinematicEntities) {
+bool Entity::update(float dt, std::vector<std::shared_ptr<Entity>>& kinematicPlaneEntities,
+                    std::vector<std::shared_ptr<Entity>>& kinematicTriangleEntities,
+                    std::vector<std::shared_ptr<Entity>>& kinematicSphereEntities) {
     if (particle) {
-        transform.translation = particle->updateInScene(dt, kinematicEntities);  // this updates lifetime too
+        transform.translation = particle->updateInScene(dt, kinematicPlaneEntities,
+                                                        kinematicTriangleEntities,
+                                                        kinematicSphereEntities);  // this updates lifetime too
         return !particle->isDead();
     }
 
@@ -83,7 +87,8 @@ bool Entity::update(float dt, std::vector<std::shared_ptr<Entity>> &kinematicEnt
 
 void Entity::render(glm::mat4 camProjectionView, FrameInfo& frameInfo, VkPipelineLayout pipelineLayout) {
     auto modelMatrix = transform.mat4();
-    EntityUBO entityUBO = {camProjectionView, modelMatrix, transform.normalMatrix(), frameInfo.camera.getPosition()};
+    glm::vec4 color = material ? material->getDiffuseColor() : glm::vec4(1.f);
+    EntityUBO entityUBO = {camProjectionView, modelMatrix, transform.normalMatrix(), color, frameInfo.camera.getPosition()};
 
     uboBuffers[frameInfo.frameIndex]->writeToBuffer(&entityUBO);
     uboBuffers[frameInfo.frameIndex]->flush();

@@ -32,7 +32,7 @@ struct hash<vkr::Mesh::Vertex> {
 
 namespace vkr {
 
-Mesh::Mesh(Device& device, const Mesh::Builder& builder) : device{device} {
+Mesh::Mesh(Device& device, const Mesh::Builder& builder) : device{device}, builder{builder} {
     createVertexBuffers(builder.vertices);
     createIndexBuffers(builder.indices);
 }
@@ -44,6 +44,35 @@ std::unique_ptr<Mesh> Mesh::createModelFromFile(Device& device,
     Builder builder{};
     builder.loadModel(filepath);
     return std::make_unique<Mesh>(device, builder);
+}
+
+
+std::unique_ptr<Mesh> Mesh::createTriangle(Device& device) {
+    Builder builder;
+
+    Vertex vtx {glm::vec3(0.5f, 0.f, -0.5f), glm::vec3(1.f,1.f,1.f), glm::vec3(0.f, -1.f, 0.f), glm::vec2(0.f, 0.f)};
+
+    // Front face
+    builder.vertices.push_back(vtx);
+    vtx.position = glm::vec3(0.f, 0.f, 0.5f);
+    builder.vertices.push_back(vtx);
+    vtx.position = glm::vec3(-0.5f, 0.f, -0.5f);
+    builder.vertices.push_back(vtx);
+
+    // Back face
+    vtx.normal = glm::vec3(0.f, 1.f, 0.f);
+    vtx.position = glm::vec3(0.5f, 0.f, -0.5f);
+    builder.vertices.push_back(vtx);
+    vtx.position = glm::vec3(-0.5f, 0.f, -0.5f);
+    builder.vertices.push_back(vtx);
+    vtx.position = glm::vec3(0.f, 0.f, 0.5f);
+    builder.vertices.push_back(vtx);
+
+    // builder.indices.push_back(1);    
+    // builder.indices.push_back(2);    
+    // builder.indices.push_back(3);
+
+    return std::make_unique<Mesh>(device, builder);    
 }
 
 void Mesh::createVertexBuffers(const std::vector<Vertex>& vertices) {
