@@ -3,7 +3,7 @@
 #include <Entity.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#define EPS 0.01f
+#define EPS 0.001f
 
 Particle::Particle() : m_currentPosition(0, 0, 0), m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(1), m_lifetime(50), m_fixed(false), m_dt(0.0001f) {
 }
@@ -174,14 +174,29 @@ glm::vec3 Particle::updateInScene(float frameTime, std::vector<std::shared_ptr<v
         }
 
         for (auto triangleEntity : kinematicTriangleEntities) {
-            if (collisionParticleTriangle(*triangleEntity->plane, triangleEntity->triangleColliderVertices)) {
+            // Check both triangle faces (in different planes to compensate particle size)
+            std::array<glm::vec3, 3> frontVerts{triangleEntity->triangleColliderVertices[0],
+                                                triangleEntity->triangleColliderVertices[1],
+                                                triangleEntity->triangleColliderVertices[2]};
+
+            if (collisionParticleTriangle(*triangleEntity->plane, frontVerts)) {
                 correctCollisionParticlePlain(*triangleEntity->plane);
+                continue;
+            }
+
+            std::array<glm::vec3, 3> backVerts{triangleEntity->triangleColliderVertices[3],
+                                               triangleEntity->triangleColliderVertices[4],
+                                               triangleEntity->triangleColliderVertices[5]};
+
+            if (collisionParticleTriangle(*triangleEntity->backfacePlane, backVerts)) {
+                correctCollisionParticlePlain(*triangleEntity->backfacePlane);
             }
         }
 
+        Plane plane;
         for (auto sphereEntity : kinematicSphereEntities) {
-            if (collisionParticlePlane(*sphereEntity->plane)) {
-                correctCollisionParticlePlain(*sphereEntity->plane);
+            if (collisionParticleSphere(sphereEntity->transform.translation, sphereEntity->transform.scale.x, plane)) {
+                correctCollisionParticlePlain(plane);
             }
         }
     }
@@ -191,22 +206,19 @@ glm::vec3 Particle::updateInScene(float frameTime, std::vector<std::shared_ptr<v
     return m_currentPosition;
 }
 
-bool Particle::collisionParticlePlane(Plane &p) {
+bool Particle::collisionParticlePlane(Plane& p) {
     float sign;
     sign = glm::dot(m_currentPosition, p.normal) + p.d;
     sign *= glm::dot(m_previousPosition, p.normal) + p.d;
 
-    if (sign <= 0) {
-        return true;
-    }
-    return false;
+    return sign <= 0;
 }
 
-bool Particle::collisionParticleTriangle(Plane &p, std::array<glm::vec3, 3> &vertices) {
+bool Particle::collisionParticleTriangle(Plane& p, std::array<glm::vec3, 3>& vertices) {
     // Check collision with triangle plane
-    if (collisionParticlePlane(p)) {
+    if (collisionParticlePlane(p) && glm::dot(p.normal, m_previousPosition - p.point) >= 0) {
         // Check collision with actual triangle
-        glm::vec3 projPos = m_currentPosition - (m_currentPosition - vertices[0]) * p.normal * p.normal;
+        glm::vec3 projPos = m_currentPosition - (m_currentPosition - (vertices[0])) * p.normal * p.normal;
         glm::vec3 x_v1 = vertices[0] - projPos;
         glm::vec3 x_v2 = vertices[1] - projPos;
         glm::vec3 x_v3 = vertices[2] - projPos;
@@ -214,13 +226,45 @@ bool Particle::collisionParticleTriangle(Plane &p, std::array<glm::vec3, 3> &ver
         glm::vec3 v1_v3 = vertices[0] - vertices[2];
 
         return computeTriangleArea(x_v2, x_v3) + computeTriangleArea(x_v3, x_v1) +
-               computeTriangleArea(x_v1, x_v2) <= computeTriangleArea(v1_v2, v1_v3) + EPS;
+                   computeTriangleArea(x_v1, x_v2) <=
+               computeTriangleArea(v1_v2, v1_v3) + EPS;
     }
 
     return false;
 }
 
-void Particle::correctCollisionParticlePlain(Plane &p) {
+bool Particle::collisionParticleSphere(glm::vec3 center, float radius, Plane& plane) {
+    // Discard particles outside the sphere
+    if (glm::length(m_currentPosition - center) > radius) return false;
+
+    // Compute P as a contact sphere-segment
+    glm::vec3 v = m_currentPosition - m_previousPosition;
+    float a = glm::dot(v, v);
+    float b = glm::dot(2.f * v, m_previousPosition - center);
+    float c = glm::dot(center, center) + glm::dot(m_previousPosition, m_previousPosition) -
+              glm::dot(2.f * m_previousPosition, center) - radius * radius;
+    float sol1 = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
+
+    // Define tangent plane on P
+    if (sol1 < 1 && sol1 > 0) {
+        glm::vec3 P = m_previousPosition + v * sol1;
+        plane.setPlaneNormal(glm::normalize(P - center));
+        plane.setPlanePoint(P);
+        return true;
+    }
+
+    float sol2 = (-b - sqrt(b * b - 4 * a * c)) / (2 * a);
+    if (sol2 < 1 && sol2 > 0) {
+        glm::vec3 P = m_previousPosition + v * sol2;
+        plane.setPlaneNormal(glm::normalize(P - center));
+        plane.setPlanePoint(P);
+        return true;
+    }
+
+    return false;
+}
+
+void Particle::correctCollisionParticlePlain(Plane& p) {
     m_currentPosition = m_currentPosition - (1 + m_bouncing) * (glm::dot(m_currentPosition, p.normal) + p.d) * p.normal;
     m_velocity = m_velocity - (1 + m_bouncing) * (glm::dot(m_velocity, p.normal)) * p.normal;
 }

@@ -32,6 +32,7 @@ class Particle {
     void setLifetime(float lifetime);
     void setFixed(bool fixed);
     void setTimeStep(float dt) { m_dt = dt; }
+    void setSize(float size) { m_size = size; }
 
     //getters
     glm::vec3 getCurrentPosition();
@@ -52,6 +53,7 @@ class Particle {
                                       std::vector<std::shared_ptr<vkr::Entity>>& kinematicSphereEntities);
     bool collisionParticlePlane(Plane &p);
     bool collisionParticleTriangle(Plane &p, std::array<glm::vec3, 3> &vertices);
+    bool collisionParticleSphere(glm::vec3 center, float radius, Plane& plane);
     void correctCollisionParticlePlain(Plane &p);
 
     float computeTriangleArea(glm::vec3 edge1, glm::vec3 edge2);
@@ -67,6 +69,7 @@ class Particle {
     float m_lifetime;
     float m_currentTime{0};
     float m_dt;
+    float m_size{0.05f};
     bool m_fixed;
 
     bool m_firstUpdate{true};

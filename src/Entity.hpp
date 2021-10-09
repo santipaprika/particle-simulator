@@ -86,9 +86,10 @@ class Entity {
     std::shared_ptr<Particle> particle{nullptr};
     std::shared_ptr<ParticleSystem> particleSystem{nullptr};
     std::shared_ptr<Plane> plane{nullptr};
+    std::shared_ptr<Plane> backfacePlane{nullptr};
 
     ColliderType colliderType{NONE};
-    std::array<glm::vec3, 3> triangleColliderVertices;
+    std::array<glm::vec3, 6> triangleColliderVertices;
 
     VkDescriptorSet descriptorSet;
 

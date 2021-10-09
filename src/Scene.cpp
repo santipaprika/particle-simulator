@@ -49,16 +49,38 @@ void Scene::loadEntities() {
     // smoothVase->transform.scale = {1.5f, 1.5f, 1.5f};
     // entities.push_back(smoothVase);
 
+    // Walls
     createBox();
 
+    // Triangle
     std::shared_ptr<Mesh> mesh = Mesh::createTriangle(device);
     auto triangle = std::make_shared<Entity>(Entity::createEntity());
     triangle->mesh = mesh;
     triangle->material = material;
-    triangle->transform.translation = {0.f, 1.5f, 0.f};
+    triangle->transform.translation = {1.7f, 1.f, 0.f};
     triangle->transform.scale = {2.f, 2.f, 2.f};
+    // triangle->transform.rotation = {0.f, 0.f, PI_2/3.f};
     triangle->colliderType = Entity::ColliderType::TRIANGLE;
     entities.push_back(triangle);
+
+    auto triangle2 = std::make_shared<Entity>(Entity::createEntity());
+    triangle2->mesh = mesh;
+    triangle2->material = material;
+    triangle2->transform.translation = {-1.7f, 1.f, 0.f};
+    triangle2->transform.scale = {2.f, 2.f, 2.f};
+    // triangle2->transform.rotation = {0.f, 0.f, -PI_2/3.f};
+    triangle2->colliderType = Entity::ColliderType::TRIANGLE;
+    entities.push_back(triangle2);
+
+    // Sphere
+    mesh = Mesh::createModelFromFile(device, (models_path + "/sphere.obj").c_str());
+    auto sphere = std::make_shared<Entity>(Entity::createEntity());
+    sphere->mesh = mesh;
+    sphere->material = material;
+    sphere->transform.translation = {0.f, 2.f, 0.f};
+    sphere->transform.scale = {0.8f, 0.8f, 0.8f};
+    sphere->colliderType = Entity::ColliderType::SPHERE;
+    entities.push_back(sphere);
 }
 
 void Scene::loadLights() {
@@ -100,7 +122,7 @@ void Scene::initializeKinematicEntities() {
                 break;
             case Entity::ColliderType::TRIANGLE:
                 // only for non-indexed single-triangle meshes
-                for (int i = 0; i < vertices.size() / 2; i += 3) {
+                for (int i = 0; i < 3; i += 3) {
                     glm::vec3 normal = glm::normalize(entity->transform.normalMatrix() * glm::normalize(
                                                                                              glm::cross(vertices[i + 2].position - vertices[i].position,
                                                                                                         vertices[i + 1].position - vertices[i].position)));
@@ -108,20 +130,32 @@ void Scene::initializeKinematicEntities() {
                     trianglePlane->setPlaneNormal(normal.x, normal.y, normal.z);
                     glm::vec3 offset = particleSize * normal * 0.99f;
 
+                    // Front face
                     entity->triangleColliderVertices[0] = offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[i].position, 1.f));
                     entity->triangleColliderVertices[1] = offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[i + 1].position, 1.f));
                     entity->triangleColliderVertices[2] = offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[i + 2].position, 1.f));
+                    // Back face
+                    entity->triangleColliderVertices[3] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2*i].position, 1.f));
+                    entity->triangleColliderVertices[4] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2*i + 1].position, 1.f));
+                    entity->triangleColliderVertices[5] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2*i + 2].position, 1.f));
 
                     trianglePlane->setPlanePoint(entity->triangleColliderVertices[0].x,
                                                  entity->triangleColliderVertices[0].y,
                                                  entity->triangleColliderVertices[0].z);
                     entity->plane = trianglePlane;
+
+                    std::shared_ptr<Plane> triangleBackfacePlane = std::make_shared<Plane>();
+                    triangleBackfacePlane->setPlaneNormal(-normal.x, -normal.y, -normal.z);
+                    triangleBackfacePlane->setPlanePoint(entity->triangleColliderVertices[3].x,
+                                                         entity->triangleColliderVertices[3].y,
+                                                         entity->triangleColliderVertices[3].z);
+                    entity->backfacePlane = triangleBackfacePlane;
                 }
 
                 kinematicTriangleEntities.push_back(entity);
                 break;
 
-            case Entity::ColliderType::SPHERE:
+            case Entity::ColliderType::SPHERE:  // must be centered sphere and regularly scaled
                 kinematicSphereEntities.push_back(entity);
                 break;
 
@@ -173,8 +207,9 @@ void Scene::spawnParticles(std::shared_ptr<ParticleSystem> particleSystem) {
         p->particle = std::make_shared<Particle>(particleSystem->getParticle(i + offset));
         p->transform.translation = p->particle->getCurrentPosition();
         p->transform.scale = glm::vec3(0.05f, 0.05f, 0.05f);
-        p->particle->setBouncing(0.7f);
+        p->particle->setBouncing(0.8f);
         p->particle->addForce(0, -12.2f, 0);
+        p->particle->setSize(0.05f);
         p->mesh = sphereMesh;
         p->material = particleMaterial;
         p->particle->setLifetime(4.0f);

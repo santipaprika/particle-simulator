@@ -24,7 +24,7 @@ void ParticleSystem::iniParticleSystem() {
         case ParticleSystemType::Waterfall: {
             for (int i = 0; i < m_numParticles; i++) {
                 Particle particle;
-                particle.setPosition(glm::vec3(0.0f, 2.0f, 0.0f));
+                particle.setPosition(glm::vec3(0.0f, 3.0f, 0.0f));
                 particle.setVelocity((rand01() - 0.5f), 0.f, 0.5f * rand01());
                 m_particleSystem.push_back(particle);
             }
@@ -32,7 +32,7 @@ void ParticleSystem::iniParticleSystem() {
         case ParticleSystemType::Fountain: {
             for (int i = 0; i < m_numParticles; i++) {
                 Particle particle;
-                particle.setPosition(0.f, 2.f, 0.f);
+                particle.setPosition(0.f, 3.f, 0.f);
                 particle.setVelocity(2.f * (rand01() - 0.5f), 5.f, 2.f * (rand01() - 0.5f));
                 m_particleSystem.push_back(particle);
             }
