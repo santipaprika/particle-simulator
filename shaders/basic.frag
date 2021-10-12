@@ -17,7 +17,8 @@ layout (binding = 0) uniform UniformBufferObject {
 layout(binding = 1) uniform sampler2D texSampler;
 
 
-const vec3 DIRECTION_TO_LIGHT = normalize(vec3(-1.0,-2.0,0.0));
+const vec3 DIRECTION_TO_LIGHT = normalize(vec3(-1.0,-1.0,0.0));
+const vec3 DIRECTION_TO_LIGHT2 = normalize(vec3(0.1,0.2,1.0));
 vec4 AMBIENT = vec4(vec3(0.1),1.0);
 
 layout(push_constant) uniform Push {
@@ -25,7 +26,7 @@ layout(push_constant) uniform Push {
 } push;
 
 void main() {
-    vec4 lightIntensity = AMBIENT + vec4(vec3(max(dot(normalWS, DIRECTION_TO_LIGHT), 0)), 1.0);
-    outColor = texture(texSampler,fragTexCoord*3) * fragColor * lightIntensity;
+    vec4 lightIntensity = AMBIENT + vec4(vec3(max(dot(normalWS, DIRECTION_TO_LIGHT), 0)), 1.0) + vec4(vec3(max(dot(normalWS, DIRECTION_TO_LIGHT2), 0)), 1.0) ;
+    outColor = texture(texSampler,fragTexCoord) * fragColor * lightIntensity;
 
 }
