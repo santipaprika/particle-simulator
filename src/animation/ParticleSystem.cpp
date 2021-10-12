@@ -26,7 +26,7 @@ std::shared_ptr<Particle> ParticleSystem::getParticle(int i) {
 }
 
 void ParticleSystem::iniParticleSystem() {
-    switch (type) {
+    switch (m_type) {
         case ParticleSystemType::Waterfall: {
             for (int i = 0; i < m_numParticles; i++) {
                 std::shared_ptr<Particle> particle = std::make_shared<Particle>();
@@ -73,34 +73,56 @@ void ParticleSystem::spawnParticles(std::shared_ptr<vkr::Mesh>& mesh, std::share
         p->particle->setSize(0.05f);
         p->mesh = mesh;
         p->material = material;
-        p->particle->setLifetime(4.0f);
+        p->particle->setLifetime(m_lifetime);
         sceneEntities.push_back(p);
         //	p.setFixed(true);
     }
 }
 
 void ParticleSystem::renderUI() {
-    ImGui::SliderFloat3("Force", (float*)&m_force, -20.f, 20.f);
+    ImGui::Text("Force");
+    ImGui::SliderFloat3("##force", (float*)&m_force, -20.f, 20.f);
     if (ImGui::IsItemEdited()) {
         for (auto& particle : m_particleSystem) {
             particle->setForce(m_force);
         }
     }
-
-    ImGui::SliderFloat("Bouncing", &m_bouncing, 0.00001f, 1.f);
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Bouncing");
+    ImGui::SliderFloat("##bouncing", &m_bouncing, 0.00001f, 1.f);
     if (ImGui::IsItemEdited()) {
         for (auto& particle : m_particleSystem) {
             particle->setBouncing(m_bouncing);
         }
     }
-
-    ImGui::SliderFloat("Friction", &m_friction, 0.00001f, 1.f);
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Friction");
+    ImGui::SliderFloat("##friction", &m_friction, 0.00001f, 1.f);
     if (ImGui::IsItemEdited()) {
         for (auto& particle : m_particleSystem) {
             particle->setFriction(m_friction);
         }
     }
-
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Solver");
     const char* items[] = {"Euler Explicit", "Euler Semi-implicit", "Verlet"};
-    ImGui::Combo("Solver", (int*)&m_solver, items, IM_ARRAYSIZE(items));
+    ImGui::Combo("##solver", (int*)&m_solver, items, IM_ARRAYSIZE(items));
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Particles per Spawn");
+    ImGui::SliderInt("##spawnParticles", &m_numParticles, 1, 30);
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Spawn Period");
+    ImGui::SliderFloat("##spawnPeriod", &m_spawnTime, 0.2f, 5.f);
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Particle Lifespan");
+    ImGui::SliderFloat("##particleLifespan", &m_lifetime, 0.2f, 10.f);
+    if (ImGui::IsItemEdited()) {
+        for (auto& particle : m_particleSystem) {
+            particle->setLifetime(m_lifetime);
+        }
+    }
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Spawn Type");
+    const char* items_type[] = {"Fountain", "Waterfall"};
+    ImGui::Combo("##d", (int*)&m_type, items_type, IM_ARRAYSIZE(items_type));
 }

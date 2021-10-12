@@ -31,7 +31,7 @@ public:
 	
     // Setters
     void setParticleSystem(int numParticles);
-    void setType(ParticleSystemType type) { this->type = type; }
+    void setType(ParticleSystemType type) { this->m_type = type; }
 
     void spawnParticles(std::shared_ptr<vkr::Mesh>& mesh, std::shared_ptr<vkr::Material> material, std::vector<std::shared_ptr<vkr::Entity>>& sceneEntities);
 
@@ -41,8 +41,10 @@ private:
     glm::vec3 m_force;
     float m_bouncing{0.8f};
     float m_friction{0.15f};
+    float m_lifetime{4.f};
+
     Particle::UpdateMethod m_solver{Particle::UpdateMethod::Verlet};
 	std::vector<std::shared_ptr<Particle>> m_particleSystem;
-    ParticleSystemType type { ParticleSystemType::Fountain };
+    ParticleSystemType m_type { ParticleSystemType::Fountain };
 };
 
