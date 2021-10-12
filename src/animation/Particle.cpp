@@ -257,7 +257,7 @@ bool Particle::collisionParticleSphere(glm::vec3 center, float radius, Plane& pl
     if (sol2 < 1 && sol2 > 0) {
         glm::vec3 P = m_previousPosition + v * sol2;
         plane.setPlaneNormal(glm::normalize(P - center));
-        plane.setPlanePoint(P);
+        plane.setPlanePoint(P + m_size * plane.normal);
         return true;
     }
 
