@@ -1,3 +1,5 @@
+#include <imgui.h>
+
 #include <Mesh.hpp>
 #include <Scene.hpp>
 #include <Utils.hpp>
@@ -32,22 +34,6 @@ void Scene::loadEntities() {
     // Mesh Entities
     std::string models_path(MODELS_PATH);
     sphereMesh = Mesh::createModelFromFile(device, (models_path + "/sphere.obj").c_str());
-    // std::shared_ptr<Mesh> mesh = Mesh::createModelFromFile(device, (models_path + "/flat_vase.obj").c_str());
-    // auto flatVase = std::make_shared<Entity>(Entity::createEntity());
-    // flatVase->mesh = mesh;
-    // flatVase->material = material;
-    // flatVase->transform.translation = {-.5f, .5f, 2.5f};
-    // flatVase->transform.scale = {1.5f, 1.5f, 1.5f};
-    // // std::shared_ptr<Entity> flatVaseP = std::make_shared<Entity>(flatVase);
-    // entities.push_back(flatVase);
-
-    // mesh = Mesh::createModelFromFile(device, (models_path + "/smooth_vase.obj").c_str());
-    // auto smoothVase = std::make_shared<Entity>(Entity::createEntity());
-    // smoothVase->mesh = mesh;
-    // smoothVase->material = material;
-    // smoothVase->transform.translation = {.5f, .5f, 2.5f};
-    // smoothVase->transform.scale = {1.5f, 1.5f, 1.5f};
-    // entities.push_back(smoothVase);
 
     // Walls
     createBox();
@@ -104,9 +90,11 @@ void Scene::loadParticles() {
     auto particleSystemRoot = std::make_shared<Entity>(Entity::createEntity());
     particleSystemRoot->particleSystem = std::make_shared<ParticleSystem>();
     particleSystemRoot->particleSystem->setParticleSystem(10);
+    particleSystemRoot->particleSystem->setType(ParticleSystem::ParticleSystemType::Waterfall);
 
-    spawnParticles(particleSystemRoot->particleSystem);
+    particleSystemRoot->particleSystem->spawnParticles(sphereMesh, particleMaterial, entities);
     entities.push_back(particleSystemRoot);
+    particleSystemEntities.push_back(particleSystemRoot);
 }
 
 void Scene::initializeKinematicEntities() {
@@ -118,7 +106,7 @@ void Scene::initializeKinematicEntities() {
         std::vector<Mesh::Vertex> vertices = entity->mesh->getBuilder().vertices;
         switch (entity->colliderType) {
             case Entity::ColliderType::PLANE:
-                kinematicPlaneEntities.push_back(entity);
+                kinematicEntities.kinematicPlaneEntities.push_back(entity);
                 break;
             case Entity::ColliderType::TRIANGLE:
                 // only for non-indexed single-triangle meshes
@@ -135,9 +123,9 @@ void Scene::initializeKinematicEntities() {
                     entity->triangleColliderVertices[1] = offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[i + 1].position, 1.f));
                     entity->triangleColliderVertices[2] = offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[i + 2].position, 1.f));
                     // Back face
-                    entity->triangleColliderVertices[3] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2*i].position, 1.f));
-                    entity->triangleColliderVertices[4] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2*i + 1].position, 1.f));
-                    entity->triangleColliderVertices[5] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2*i + 2].position, 1.f));
+                    entity->triangleColliderVertices[3] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2 * i].position, 1.f));
+                    entity->triangleColliderVertices[4] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2 * i + 1].position, 1.f));
+                    entity->triangleColliderVertices[5] = -offset + glm::vec3(entity->transform.mat4() * glm::vec4(vertices[2 * i + 2].position, 1.f));
 
                     trianglePlane->setPlanePoint(entity->triangleColliderVertices[0].x,
                                                  entity->triangleColliderVertices[0].y,
@@ -152,11 +140,11 @@ void Scene::initializeKinematicEntities() {
                     entity->backfacePlane = triangleBackfacePlane;
                 }
 
-                kinematicTriangleEntities.push_back(entity);
+                kinematicEntities.kinematicTriangleEntities.push_back(entity);
                 break;
 
             case Entity::ColliderType::SPHERE:  // must be centered sphere and regularly scaled
-                kinematicSphereEntities.push_back(entity);
+                kinematicEntities.kinematicSphereEntities.push_back(entity);
                 break;
 
             default:
@@ -166,11 +154,17 @@ void Scene::initializeKinematicEntities() {
 }
 
 void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout) {
+    for (auto& particleSystemEntity : particleSystemEntities) {
+        particleSystemEntity->particleSystem->updateInScene(dt, kinematicEntities);
+    }
+
     for (int i = 0; i < entities.size(); i++) {
-        if (!entities[i]->update(dt, kinematicPlaneEntities, kinematicTriangleEntities, kinematicSphereEntities)) {
+        if (!entities[i]->update(dt)) {
+            // remove entity
             vkQueueWaitIdle(device.graphicsQueue());
             vkFreeDescriptorSets(device.device(), descriptorPool, 1, &entities[i]->descriptorSet);
             entities.erase(entities.begin() + i);
+            
 
             i--;
         }
@@ -179,42 +173,25 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
     static float counter = 0;
     counter += dt;
 
-    for (int i = 0; i < entities.size(); i++) {
-        if (entities[i]->particleSystem) {
-            if (counter < entities[i]->particleSystem->getSpawnTime()) continue;
+    for (auto& particleSystemEntity : particleSystemEntities) {
+        if (counter < particleSystemEntity->particleSystem->getSpawnTime()) continue;
 
-            std::shared_ptr<ParticleSystem> particleSystem = entities[i]->particleSystem;
-            spawnParticles(particleSystem);
+        std::shared_ptr<ParticleSystem> particleSystem = particleSystemEntity->particleSystem;
+        particleSystem->spawnParticles(sphereMesh, particleMaterial, entities);
 
-            // Create buffers and sets for the new particle entities (last S entities where S=number of particles per spawn)
-            for (size_t j = entities.size() - particleSystem->getNumParticlesPerSpawn(); j < entities.size(); j++) {
-                entities[j]->createUniformBuffer(device);
-                entities[j]->updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
-            }
-
-            counter = 0;
+        // Create buffers and sets for the new particle entities (last S entities where S=number of particles per spawn)
+        for (size_t j = entities.size() - particleSystem->getNumParticlesPerSpawn(); j < entities.size(); j++) {
+            entities[j]->createUniformBuffer(device);
+            entities[j]->updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
         }
+
+        counter = 0;
     }
 }
 
-void Scene::spawnParticles(std::shared_ptr<ParticleSystem> particleSystem) {
-    particleSystem->iniParticleSystem();
-
-    for (int i = 0; i < particleSystem->getNumParticlesPerSpawn(); i++) {
-        auto p = std::make_shared<Entity>(Entity::createEntity());
-
-        int offset = static_cast<int>(particleSystem->getNumParticles()) - particleSystem->getNumParticlesPerSpawn();
-        p->particle = std::make_shared<Particle>(particleSystem->getParticle(i + offset));
-        p->transform.translation = p->particle->getCurrentPosition();
-        p->transform.scale = glm::vec3(0.05f, 0.05f, 0.05f);
-        p->particle->setBouncing(0.8f);
-        p->particle->addForce(0, -12.2f, 0);
-        p->particle->setSize(0.05f);
-        p->mesh = sphereMesh;
-        p->material = particleMaterial;
-        p->particle->setLifetime(4.0f);
-        entities.push_back(p);
-        //	p.setFixed(true);
+void Scene::renderUI() {
+    for (auto& particleSystemEntity : particleSystemEntities) {
+        particleSystemEntity->particleSystem->renderUI();
     }
 }
 

@@ -71,9 +71,7 @@ class Entity {
 
     id_t getId() { return id; }
 
-    bool update(float dt, std::vector<std::shared_ptr<Entity>>& kinematicPlaneEntities,
-                std::vector<std::shared_ptr<Entity>>& kinematicTriangleEntities,
-                std::vector<std::shared_ptr<Entity>>& kinematicSphereEntities);
+    bool update(float dt);
     void render(glm::mat4 camProjectionView, FrameInfo& frameInfo, VkPipelineLayout pipelineLayout);
 
     TransformComponent transform{};

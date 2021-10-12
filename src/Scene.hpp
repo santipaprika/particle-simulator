@@ -6,6 +6,12 @@
 
 namespace vkr {
 
+struct KinematicEntities {
+    std::vector<std::shared_ptr<Entity>> kinematicPlaneEntities;
+    std::vector<std::shared_ptr<Entity>> kinematicTriangleEntities;
+    std::vector<std::shared_ptr<Entity>> kinematicSphereEntities;
+};
+
 class Scene {
    public:
     Scene(Device& device);
@@ -26,13 +32,12 @@ class Scene {
 
     // Update
     void updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout);
-    void spawnParticles(std::shared_ptr<ParticleSystem> particleSystem);
+    void renderUI();
 
    private:
     std::vector<std::shared_ptr<Entity>> entities;
-    std::vector<std::shared_ptr<Entity>> kinematicPlaneEntities;
-    std::vector<std::shared_ptr<Entity>> kinematicTriangleEntities;
-    std::vector<std::shared_ptr<Entity>> kinematicSphereEntities;
+    std::vector<std::shared_ptr<Entity>> particleSystemEntities;
+    KinematicEntities kinematicEntities;
     std::vector<std::shared_ptr<Entity>> lights;
     std::vector<Texture> textures;
     Camera mainCamera;

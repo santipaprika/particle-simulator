@@ -59,10 +59,13 @@ void Application::run() {
         ImGui::Checkbox("Use Skybox", &scene.getMainCamera().hasSkybox());
         switchedMSAA = ImGui::Checkbox("Use MSAA", &useMSAA);
 
+        ImGui::Separator();
+        scene.renderUI();
+
         ImGui::End();
 
-        // ImGui::ShowDemoWindow();
         ImGui::ShowMetricsWindow();
+        
         ImGui::Render();
 
         auto newTime = std::chrono::high_resolution_clock::now();

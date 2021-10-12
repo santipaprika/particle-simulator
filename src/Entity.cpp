@@ -72,13 +72,9 @@ glm::mat3 TransformComponent::normalMatrix() {
 }
 
 // If update returns false the entity should be removed from the scene
-bool Entity::update(float dt, std::vector<std::shared_ptr<Entity>>& kinematicPlaneEntities,
-                    std::vector<std::shared_ptr<Entity>>& kinematicTriangleEntities,
-                    std::vector<std::shared_ptr<Entity>>& kinematicSphereEntities) {
+bool Entity::update(float dt) {
     if (particle) {
-        transform.translation = particle->updateInScene(dt, kinematicPlaneEntities,
-                                                        kinematicTriangleEntities,
-                                                        kinematicSphereEntities);  // this updates lifetime too
+        transform.translation = particle->getCurrentPosition();
         return !particle->isDead();
     }
 
