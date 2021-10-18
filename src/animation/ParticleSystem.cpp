@@ -109,7 +109,7 @@ void ParticleSystem::renderUI() {
     ImGui::Combo("##solver", (int*)&m_solver, items, IM_ARRAYSIZE(items));
     ImGui::Separator();  // ---------------------------------
     ImGui::Text("Particles per Spawn");
-    ImGui::SliderInt("##spawnParticles", &m_numParticles, 1, 30);
+    ImGui::SliderInt("##spawnParticles", &m_numParticles, 1, 200);
     ImGui::Separator();  // ---------------------------------
     ImGui::Text("Spawn Period");
     ImGui::SliderFloat("##spawnPeriod", &m_spawnTime, 0.2f, 5.f);

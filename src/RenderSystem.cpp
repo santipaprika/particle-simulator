@@ -31,9 +31,9 @@ RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, Scene& scene
 
 void RenderSystem::setupDescriptors() {
     uint32_t entitiesCount = static_cast<uint32_t>(scene.getEntities().size() + 1);  // +1 from skybox
-    std::vector<PoolSize> poolSizes = {PoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-                                       PoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000}};
-    createDescriptorPool(poolSizes, 1000);
+    std::vector<PoolSize> poolSizes = {PoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5000},
+                                       PoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5000}};
+    createDescriptorPool(poolSizes, 5000);
 
     createDescriptorSets();
 }
