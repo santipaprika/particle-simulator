@@ -16,20 +16,16 @@ void Scene::initialize() {
     loadEntities();
     loadLights();
     loadCameraSkybox();
-    loadParticles();
     initializeKinematicEntities();
 }
 
-void Scene::loadEntities() {
+void Scene::loadEntities(Scenario scenario) {
     std::string textures_path(TEXTURES_PATH);
-    // std::shared_ptr<Texture> texture = Texture::createTextureFromFile(device, (textures_path + "/test.jpg"));
 
     std::shared_ptr<Texture> blankTexture = Texture::createTextureFromFile(device, (textures_path + "/blank.jpg"));
     std::shared_ptr<Material> material = std::make_shared<Material>(blankTexture);
     material->setDiffuseColor(glm::vec4(0.f, 1.f, 0.f, 1.f));
     blankMaterial = std::make_shared<Material>(blankTexture);
-    particleMaterial = std::make_shared<Material>(blankTexture);
-    particleMaterial->setDiffuseColor(glm::vec4(1.f, 0.f, 0.f, 1.f));
 
     // Mesh Entities
     std::string models_path(MODELS_PATH);
@@ -38,28 +34,8 @@ void Scene::loadEntities() {
     // Walls
     createBox();
 
-    // Triangle
-    std::shared_ptr<Mesh> mesh = Mesh::createTriangle(device);
-    auto triangle = std::make_shared<Entity>(Entity::createEntity());
-    triangle->mesh = mesh;
-    triangle->material = material;
-    triangle->transform.translation = {1.7f, 1.f, 0.f};
-    triangle->transform.scale = {2.f, 2.f, 2.f};
-    // triangle->transform.rotation = {0.f, 0.f, PI_2/3.f};
-    triangle->colliderType = Entity::ColliderType::TRIANGLE;
-    entities.push_back(triangle);
-
-    auto triangle2 = std::make_shared<Entity>(Entity::createEntity());
-    triangle2->mesh = mesh;
-    triangle2->material = material;
-    triangle2->transform.translation = {-1.7f, 1.f, 0.f};
-    triangle2->transform.scale = {2.f, 2.f, 2.f};
-    // triangle2->transform.rotation = {0.f, 0.f, -PI_2/3.f};
-    triangle2->colliderType = Entity::ColliderType::TRIANGLE;
-    entities.push_back(triangle2);
-
     // Sphere
-    mesh = Mesh::createModelFromFile(device, (models_path + "/sphere.obj").c_str());
+    std::shared_ptr<Mesh> mesh = Mesh::createModelFromFile(device, (models_path + "/sphere.obj").c_str());
     auto sphere = std::make_shared<Entity>(Entity::createEntity());
     sphere->mesh = mesh;
     sphere->material = material;
@@ -67,6 +43,52 @@ void Scene::loadEntities() {
     sphere->transform.scale = {0.8f, 0.8f, 0.8f};
     sphere->colliderType = Entity::ColliderType::SPHERE;
     entities.push_back(sphere);
+
+    switch (scenario) {
+        case SCENE1: {
+            particleMaterial = std::make_shared<Material>(blankTexture);
+            particleMaterial->setDiffuseColor(glm::vec4(1.f, 0.f, 0.f, 1.f));
+
+            // Triangle
+            std::shared_ptr<Mesh> mesh = Mesh::createTriangle(device);
+            auto triangle = std::make_shared<Entity>(Entity::createEntity());
+            triangle->mesh = mesh;
+            triangle->material = material;
+            triangle->transform.translation = {1.7f, 1.f, 0.f};
+            triangle->transform.scale = {2.f, 2.f, 2.f};
+            // triangle->transform.rotation = {0.f, 0.f, PI_2/3.f};
+            triangle->colliderType = Entity::ColliderType::TRIANGLE;
+            entities.push_back(triangle);
+
+            auto triangle2 = std::make_shared<Entity>(Entity::createEntity());
+            triangle2->mesh = mesh;
+            triangle2->material = material;
+            triangle2->transform.translation = {-1.7f, 1.f, 0.f};
+            triangle2->transform.scale = {2.f, 2.f, 2.f};
+            // triangle2->transform.rotation = {0.f, 0.f, -PI_2/3.f};
+            triangle2->colliderType = Entity::ColliderType::TRIANGLE;
+            entities.push_back(triangle2);
+
+            loadParticles();
+
+        } break;
+
+        case SCENE2: {
+            // Hair
+            auto hairEntity = std::make_shared<Entity>(Entity::createEntity());
+            hairEntity->hair = std::make_shared<Hair>(device, (models_path + "/wWavy.hair").c_str());
+
+            hairEntity->material = material;
+            hairEntity->transform.translation = {0.f, 4.5f, 0.f};
+            hairEntity->transform.scale = {0.03f, 0.03f, 0.03f};
+            // hairEntity->transform.rotation = {PI_2, PI_2, 0};
+
+            entities.push_back(std::move(hairEntity));
+        } break;
+        default: {
+            break;
+        }
+    }
 }
 
 void Scene::loadLights() {
@@ -164,7 +186,6 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
             vkQueueWaitIdle(device.graphicsQueue());
             vkFreeDescriptorSets(device.device(), descriptorPool, 1, &entities[i]->descriptorSet);
             entities.erase(entities.begin() + i);
-            
 
             i--;
         }
@@ -187,9 +208,23 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
 
         counter = 0;
     }
+
+    for (auto& entity : entities) {
+        if (entity->hair) {
+            for (int i = 0; i < entity->hair->numStrands * entity->hair->builder.defaultSegments; i++) {
+                entity->hair->builder.vertices[i].position += glm::vec3(0, -dt * 5.f, 0);
+            }
+            entity->hair->updateBuffers();
+        }
+    }
 }
 
 void Scene::renderUI() {
+    for (auto& entity : entities) {
+        if (entity->hair)
+            entity->hair->renderUI();
+    }
+
     for (auto& particleSystemEntity : particleSystemEntities) {
         particleSystemEntity->particleSystem->renderUI();
     }

@@ -41,7 +41,7 @@ void Application::run() {
 
     auto viewerObject = Entity::createEntity();
     viewerObject.transform.translation = glm::vec3(0,3,-3);
-    viewerObject.transform.rotation = glm::vec3(PI_2/2.f,0.f,0.f);
+    viewerObject.transform.rotation = glm::vec3(PI_2/5.f,0.f,0.f);
     InputController cameraController{};
 
     bool useMSAA = true;

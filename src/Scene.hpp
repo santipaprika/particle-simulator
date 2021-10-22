@@ -14,12 +14,14 @@ struct KinematicEntities {
 
 class Scene {
    public:
+    enum Scenario { SCENE1, SCENE2, SCENE3 };
+
     Scene(Device& device);
     ~Scene();
 
     // Initialization
     void initialize();
-    void loadEntities();
+    void loadEntities(Scenario scenario = SCENE2);
     void loadLights();
     void loadCameraSkybox();
     void loadParticles();

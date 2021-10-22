@@ -1,17 +1,22 @@
+#include <Particle.h>
+#include <imgui.h>
+
 #include <Hair.hpp>
 #include <Utils.hpp>
 
 namespace vkr {
 
 Hair::Hair(Device &device, const char *filename) : device{device} {
-    Builder builder;
     builder.loadHairModel(filename, this->hair, dirs);
-    createVertexBuffers(builder.vertices);
-    createIndexBuffers(builder.indices);
+    createVertexBuffers(builder.vertices, builder.defaultSegments);
+    createIndexBuffers(builder.indices, builder.defaultSegments);
 }
 
 Hair::~Hair() {
     delete[] dirs;
+
+    vkUnmapMemory(device.device(), stagingBufferMemory);
+
     vkDestroyBuffer(device.device(), vertexBuffer, nullptr);
     vkFreeMemory(device.device(), vertexBufferMemory, nullptr);
 
@@ -19,6 +24,9 @@ Hair::~Hair() {
         vkDestroyBuffer(device.device(), indexBuffer, nullptr);
         vkFreeMemory(device.device(), indexBufferMemory, nullptr);
     }
+
+    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 }
 
 void Hair::Builder::loadHairModel(const char *filename, cyHairFile &hairfile, float *&dirs) {
@@ -68,15 +76,16 @@ void Hair::Builder::loadHairModel(const char *filename, cyHairFile &hairfile, fl
     // Fill strand array with vertices
     float *pointsArray = hairfile.GetPointsArray();
     unsigned short *segmentsArray = hairfile.GetSegmentsArray();
-    unsigned short defaultSegments = hairfile.GetHeader().d_segments;
+    defaultSegments = hairfile.GetHeader().d_segments;
     float *colorArray = hairfile.GetColorsArray();
     glm::vec3 defaultColor(hairfile.GetHeader().d_color[0], hairfile.GetHeader().d_color[1], hairfile.GetHeader().d_color[2]);
 
     int pointIdx = 0;
     int p1 = 0, p2 = 0, p3 = 0;
+    float reductionFactor = 5.f;
     for (int i = 0; i < hairCount; i++) {
         short numSegments = segmentsArray ? segmentsArray[i] : defaultSegments;
-        for (short j = 0; j < numSegments+1; j++) {  // using lines, nPoints = nSegments + 1
+        for (short j = 0; j < numSegments + 1; j++) {  // using lines, nPoints = nSegments + 1
             indices.push_back(pointIdx / 3);
             p1 = pointIdx++, p2 = pointIdx++, p3 = pointIdx++;
             glm::vec3 point(pointsArray[p1], pointsArray[p2], pointsArray[p3]);
@@ -84,6 +93,8 @@ void Hair::Builder::loadHairModel(const char *filename, cyHairFile &hairfile, fl
             glm::vec3 color = colorArray ? glm::vec3(colorArray[p1], colorArray[p2], colorArray[p3]) : defaultColor;
 
             vertices.push_back(Vertex{point, color, direction});
+            std::shared_ptr<Particle> particle = std::make_shared<Particle>(point.x, point.y, point.z);
+            verticesParticles.push_back(std::move(particle));
         }
         // Set primitive restart
         indices.push_back(0xFFFFFFFF);
@@ -93,21 +104,26 @@ void Hair::Builder::loadHairModel(const char *filename, cyHairFile &hairfile, fl
     printf("Number of indices = %zd\n", indices.size());
 }
 
-void Hair::createVertexBuffers(const std::vector<Vertex> &vertices) {
-    vertexCount = static_cast<uint32_t>(vertices.size());
-    VkDeviceSize bufferSize = sizeof(Vertex) * static_cast<uint32_t>(vertexCount);
+void Hair::createVertexBuffers(const std::vector<Vertex> &vertices, int numSegments) {
+    // Destroy existing buffer
+    if (vertexBuffer != VK_NULL_HANDLE) {
+        vkUnmapMemory(device.device(), stagingBufferMemory);
+        vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+        vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
+        vkDestroyBuffer(device.device(), vertexBuffer, nullptr);
+        vkFreeMemory(device.device(), vertexBufferMemory, nullptr);
+    }
+
+    VkDeviceSize bufferSize = sizeof(Vertex) * static_cast<uint32_t>(numStrands * numSegments);
+
     device.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         stagingBuffer, stagingBufferMemory);
 
-    void *data;
     vkMapMemory(device.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-    vkUnmapMemory(device.device(), stagingBufferMemory);
 
     device.createBuffer(
         bufferSize,
@@ -115,13 +131,16 @@ void Hair::createVertexBuffers(const std::vector<Vertex> &vertices) {
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
     device.copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
-    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 }
 
-void Hair::createIndexBuffers(const std::vector<uint32_t> &indices) {
-    indexCount = static_cast<uint32_t>(indices.size());
+void Hair::createIndexBuffers(const std::vector<uint32_t> &indices, int numSegments) {
+    // Destroy existing buffer
+    if (indexBuffer != VK_NULL_HANDLE) {
+        vkDestroyBuffer(device.device(), indexBuffer, nullptr);
+        vkFreeMemory(device.device(), indexBufferMemory, nullptr);
+    }
+
+    indexCount = static_cast<uint32_t>(numStrands * (numSegments));
     hasIndexBuffer = indexCount > 0;
 
     if (!hasIndexBuffer) {
@@ -130,27 +149,27 @@ void Hair::createIndexBuffers(const std::vector<uint32_t> &indices) {
 
     VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
+    VkBuffer l_stagingBuffer;
+    VkDeviceMemory l_stagingBufferMemory;
     device.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        stagingBuffer, stagingBufferMemory);
+                        l_stagingBuffer, l_stagingBufferMemory);
 
     void *data;
-    vkMapMemory(device.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+    vkMapMemory(device.device(), l_stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
-    vkUnmapMemory(device.device(), stagingBufferMemory);
+    vkUnmapMemory(device.device(), l_stagingBufferMemory);
 
     device.createBuffer(
         bufferSize,
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
-    device.copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+    device.copyBuffer(l_stagingBuffer, indexBuffer, bufferSize);
 
-    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
-    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+    vkDestroyBuffer(device.device(), l_stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), l_stagingBufferMemory, nullptr);
 }
 
 void Hair::draw(VkCommandBuffer commandBuffer) {
@@ -169,6 +188,23 @@ void Hair::bind(VkCommandBuffer commandBuffer) {
     if (hasIndexBuffer) {
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     }
+}
+
+void Hair::renderUI() {
+    ImGui::Text("Number of strands:");
+    ImGui::SliderInt("##nStrands", &numStrands, 1, (int)builder.vertices.size() / builder.defaultSegments);
+    if (ImGui::IsItemEdited()) {
+        vkDeviceWaitIdle(device.device());
+        createVertexBuffers(builder.vertices, builder.defaultSegments);
+        createIndexBuffers(builder.indices, builder.defaultSegments);
+    }
+}
+
+void Hair::updateBuffers() {
+    VkDeviceSize bufferSize = sizeof(Vertex) * static_cast<uint32_t>(numStrands * builder.defaultSegments);
+
+    memcpy(data, builder.vertices.data(), static_cast<size_t>(bufferSize));
+    device.copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 }
 
 std::vector<VkVertexInputBindingDescription> Hair::Vertex::getBindingDescriptions() {
