@@ -47,12 +47,17 @@ void ParticleSystem::iniParticleSystem() {
 }
 
 void ParticleSystem::updateInScene(const float& dt, vkr::KinematicEntities& kinematicEntities) {
+    static float timeSinceLastUpdate{0.f};
+    timeSinceLastUpdate += dt;
+    int numSteps = static_cast<int>(std::floor(timeSinceLastUpdate / m_particleSystem[0]->getTimeStep()));
+    timeSinceLastUpdate = timeSinceLastUpdate - numSteps*m_particleSystem[0]->getTimeStep();
+
     for (int i = 0; i < m_particleSystem.size(); i++) {
         if (m_particleSystem[i]->isDead()) {
             m_particleSystem.erase(m_particleSystem.begin() + i);
             i--;
         } else {
-            m_particleSystem[i]->updateInScene(dt, kinematicEntities, m_solver);
+            m_particleSystem[i]->updateInScene(dt, numSteps, kinematicEntities, m_solver);
         }
     }
 }

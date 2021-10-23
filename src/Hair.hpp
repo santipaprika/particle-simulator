@@ -5,13 +5,15 @@
 
 #include <Device.hpp>
 #include <glm/glm.hpp>
-#include <vector>
 #include <memory>
-
+#include <vector>
 
 class Particle;
 
 namespace vkr {
+
+struct KinematicEntities;
+struct TransformComponent;
 
 class Hair {
    public:
@@ -40,6 +42,8 @@ class Hair {
     Hair(Device &device, const char *filename);
     ~Hair();
 
+    void loadParticles(TransformComponent& transform);
+
     void draw(VkCommandBuffer commandBuffer);
     void bind(VkCommandBuffer commandBuffer);
 
@@ -47,6 +51,7 @@ class Hair {
     Builder builder;
     int numStrands = 5;
 
+    void update(float dt, KinematicEntities &kinematicEntities, TransformComponent& transform);
     void updateBuffers();
 
    private:
@@ -60,7 +65,7 @@ class Hair {
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    void* data;
+    void *data;
 
     VkBuffer vertexBuffer{VK_NULL_HANDLE};
     VkDeviceMemory vertexBufferMemory;
@@ -70,7 +75,6 @@ class Hair {
     VkBuffer indexBuffer{VK_NULL_HANDLE};
     VkDeviceMemory indexBufferMemory;
     uint32_t indexCount;
-
 };
 
 }  // namespace vkr

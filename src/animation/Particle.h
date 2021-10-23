@@ -43,6 +43,7 @@ class Particle {
     glm::vec3 getVelocity();
     float getBouncing();
     float getLifetime();
+    float getTimeStep() { return m_dt; }
     bool isDead() { return m_currentTime >= m_lifetime; }
     bool isFixed();
 
@@ -50,7 +51,7 @@ class Particle {
     void addForce(glm::vec3 force);
     void addForce(const float& x, const float& y, const float& z);
     void updateParticle(const float& dt, UpdateMethod method = UpdateMethod::EulerOrig);
-    void updateInScene(float frameTime, vkr::KinematicEntities& kinematicEntities, UpdateMethod method);
+    void updateInScene(float frameTime, int numSteps, vkr::KinematicEntities& kinematicEntities, UpdateMethod method);
     bool collisionParticlePlane(Plane& p);
     bool collisionParticleTriangle(Plane& p, std::array<glm::vec3, 3>& vertices);
     bool collisionParticleSphere(glm::vec3 center, float radius, Plane& plane);

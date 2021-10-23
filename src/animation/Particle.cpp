@@ -6,22 +6,15 @@
 
 #define EPS 0.001f
 
-Particle::Particle() : m_currentPosition(0, 0, 0), m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(0.8f), m_lifetime(50), m_fixed(false), m_dt(0.0005f) {
+Particle::Particle() : m_currentPosition(0, 0, 0), m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(0.8f), m_lifetime(50), m_fixed(false), m_dt(0.005f) {
 }
 
-Particle::Particle(const float& x, const float& y, const float& z) : m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(0.8f), m_lifetime(50), m_fixed(false), m_dt(0.0005f) {
+Particle::Particle(const float& x, const float& y, const float& z) : m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(0.8f), m_lifetime(50), m_fixed(false), m_dt(0.005f) {
     m_currentPosition.x = x;
     m_currentPosition.y = y;
     m_currentPosition.z = z;
     m_previousPosition = glm::vec3(x, y, z);
 }
-
-/*
-Particle::Particle(glm::vec3 pos, glm::vec3 vel, float bouncing, bool fixed, int lifetime, glm::vec3 force) :
-m_currentPosition(pos), m_previousPosition(pos), m_force(force), m_velocity(vel), m_bouncing(bouncing), m_lifetime(lifetime), m_fixed(fixed)
-{
-}
-*/
 
 Particle::~Particle() {
 }
@@ -158,13 +151,8 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
     return;
 }
 
-void Particle::updateInScene(float frameTime, vkr::KinematicEntities& kinematicEntities, UpdateMethod method) {
-    m_timeSinceLastUpdate += frameTime;
-    float numStepsReal = m_timeSinceLastUpdate / m_dt;
-    int numSteps = static_cast<int>(std::floor(numStepsReal));
-    m_timeSinceLastUpdate = m_timeSinceLastUpdate - numSteps*m_dt;
-
-    for (int step = 1; step < numSteps; step++) {
+void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntities& kinematicEntities, UpdateMethod method) {
+    for (int step = 0; step < numSteps; step++) {
         // call solver types: EulerOrig, EulerSemi and Verlet(to be implemented)
         updateParticle(m_dt, method);
 

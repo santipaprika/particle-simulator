@@ -83,6 +83,8 @@ void Scene::loadEntities(Scenario scenario) {
             hairEntity->transform.scale = {0.03f, 0.03f, 0.03f};
             // hairEntity->transform.rotation = {PI_2, PI_2, 0};
 
+            hairEntity->hair->loadParticles(hairEntity->transform);
+
             entities.push_back(std::move(hairEntity));
         } break;
         default: {
@@ -208,13 +210,9 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
 
         counter = 0;
     }
-
     for (auto& entity : entities) {
         if (entity->hair) {
-            for (int i = 0; i < entity->hair->numStrands * entity->hair->builder.defaultSegments; i++) {
-                entity->hair->builder.vertices[i].position += glm::vec3(0, -dt * 5.f, 0);
-            }
-            entity->hair->updateBuffers();
+            entity->hair->update(dt, kinematicEntities, entity->transform);
         }
     }
 }

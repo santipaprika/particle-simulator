@@ -2,7 +2,9 @@
 #include <imgui.h>
 
 #include <Hair.hpp>
+#include <Scene.hpp>
 #include <Utils.hpp>
+#include <Entity.hpp>
 
 namespace vkr {
 
@@ -93,8 +95,6 @@ void Hair::Builder::loadHairModel(const char *filename, cyHairFile &hairfile, fl
             glm::vec3 color = colorArray ? glm::vec3(colorArray[p1], colorArray[p2], colorArray[p3]) : defaultColor;
 
             vertices.push_back(Vertex{point, color, direction});
-            std::shared_ptr<Particle> particle = std::make_shared<Particle>(point.x, point.y, point.z);
-            verticesParticles.push_back(std::move(particle));
         }
         // Set primitive restart
         indices.push_back(0xFFFFFFFF);
@@ -102,6 +102,21 @@ void Hair::Builder::loadHairModel(const char *filename, cyHairFile &hairfile, fl
 
     printf("Number of stored hair points = %zd\n", vertices.size());
     printf("Number of indices = %zd\n", indices.size());
+}
+
+void Hair::loadParticles(TransformComponent& transform) {
+    for (auto& vertex : builder.vertices) {
+        // Create particle attached to vertex
+        glm::vec3 worldPos = transform.mat4() * glm::vec4(vertex.position, 1.f);
+
+        std::shared_ptr<Particle> particle = std::make_shared<Particle>(worldPos.x, worldPos.y, worldPos.z);
+        particle->setBouncing(0.8f);
+        particle->setFriction(0.1f);
+        particle->setForce(glm::vec3(0.f, -5.f, 0.f));
+        particle->setSize(0.05f);
+        particle->setLifetime(100);
+        builder.verticesParticles.push_back(std::move(particle));
+    }
 }
 
 void Hair::createVertexBuffers(const std::vector<Vertex> &vertices, int numSegments) {
@@ -192,12 +207,27 @@ void Hair::bind(VkCommandBuffer commandBuffer) {
 
 void Hair::renderUI() {
     ImGui::Text("Number of strands:");
-    ImGui::SliderInt("##nStrands", &numStrands, 1, (int)builder.vertices.size() / builder.defaultSegments);
+    ImGui::SliderInt("##nStrands", &numStrands, 1, 100);
     if (ImGui::IsItemEdited()) {
         vkDeviceWaitIdle(device.device());
         createVertexBuffers(builder.vertices, builder.defaultSegments);
         createIndexBuffers(builder.indices, builder.defaultSegments);
     }
+}
+
+void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformComponent& transform) {
+    static float timeSinceLastUpdate{0.f};
+    timeSinceLastUpdate += dt;
+    int numSteps = static_cast<int>(std::floor(timeSinceLastUpdate / builder.verticesParticles[0]->getTimeStep()));
+    timeSinceLastUpdate = timeSinceLastUpdate - numSteps * builder.verticesParticles[0]->getTimeStep();
+
+    glm::mat4 modelInv = glm::inverse(transform.mat4());
+
+    for (int i = 0; i < numStrands * builder.defaultSegments; i++) {
+        builder.verticesParticles[i]->updateInScene(dt, numSteps, kinematicEntities, Particle::UpdateMethod::EulerSemi);
+        builder.vertices[i].position = modelInv * glm::vec4(builder.verticesParticles[i]->getCurrentPosition(), 1.f);
+    }
+    updateBuffers();
 }
 
 void Hair::updateBuffers() {
