@@ -153,7 +153,7 @@ void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntiti
     
     // call solver types: EulerOrig, EulerSemi and Verlet(to be implemented)
     updateParticle(m_dt, method);
-    
+
     //Check collisions
     checkAndCorrectCollisionParticlePlane(kinematicEntities.kinematicPlaneEntities);
 
@@ -182,7 +182,7 @@ void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntiti
     for (auto sphereEntity : kinematicEntities.kinematicSphereEntities) {
         if (collisionParticleSphere(sphereEntity->transform.translation, sphereEntity->transform.scale.x, plane, bugged)) {
             if (bugged) m_currentPosition = m_previousPosition;
-            correctCollisionParticlePlain(plane);
+            else correctCollisionParticlePlain(plane);
         }
         bugged = false;
     }
@@ -296,7 +296,6 @@ void Particle::checkAndCorrectCollisionParticlePlane(std::vector<std::shared_ptr
                 if (collisionParticlePlane(*(planes[j]->plane))) {
                     correctCollisionParticlePlain(*(planes[j]->plane));
                 }
-                // checkAndCorrectCollisionParticlePlane(planes, 1);
             }
         }
     }

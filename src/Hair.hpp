@@ -79,15 +79,15 @@ class Hair {
     uint32_t indexCount;
 
     float segmentLength;
-    float strandMass{0.5f};
+    float strandMass{1.f};
 
-    float stiffness{500.f};
-    float damping{0.4f};
-    float bouncing{0.7f};
-    float friction{0.01f};
+    float stiffness{1000.f};
+    float damping{4.f};
+    float bouncing{0.1f};
+    float friction{0.8f};
 
     bool fixed{true};
-    Particle::UpdateMethod solver{Particle::UpdateMethod::EulerSemi};
+    Particle::UpdateMethod solver{Particle::UpdateMethod::Verlet};
 
     glm::vec3 gravity{0.f, -0.8f, 0.f};
 };

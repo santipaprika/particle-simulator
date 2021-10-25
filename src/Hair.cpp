@@ -308,7 +308,7 @@ void Hair::renderUI() {
 
     ImGui::Separator();  // ---------------------------------
     ImGui::Text("Stiffness");
-    ImGui::SliderFloat("##hairElast", &stiffness, 0.001f, 1000.f);
+    ImGui::SliderFloat("##hairElast", &stiffness, 0.001f, 2000.f);
     if (ImGui::IsItemEdited()) {
         for (auto &particle : builder.verticesParticles) {
             particle->setStiffness(stiffness);
