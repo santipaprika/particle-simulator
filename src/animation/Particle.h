@@ -35,6 +35,11 @@ class Particle {
     void setTimeStep(float dt) { m_dt = dt; }
     void setSize(float size) { m_size = size; }
     void setFriction(float friction) { m_friction = friction; }
+    void setMass(float mass) { m_mass = mass; }
+    void setStiffness(float stiffness) { m_stiffness = stiffness; }
+    void setDamping(float damping) { m_damping = damping; }
+    void setDesiredLength(float desiredLength) { m_desiredLength = desiredLength; }
+    void addTime(float time) { m_currentTime += time; }
 
     //getters
     glm::vec3 getCurrentPosition();
@@ -54,17 +59,18 @@ class Particle {
     void updateInScene(float frameTime, int numSteps, vkr::KinematicEntities& kinematicEntities, UpdateMethod method);
     bool collisionParticlePlane(Plane& p);
     bool collisionParticleTriangle(Plane& p, std::array<glm::vec3, 3>& vertices);
-    bool collisionParticleSphere(glm::vec3 center, float radius, Plane& plane);
+    bool collisionParticleSphere(glm::vec3 center, float radius, Plane& plane, bool& bugged);
     void correctCollisionParticlePlain(Plane& p);
 
     float computeTriangleArea(glm::vec3 edge1, glm::vec3 edge2);
+    void addSpringForce(std::shared_ptr<Particle> nextParticle, glm::vec3 &gravity, bool isFirstParticle = false);
 
    private:
     glm::vec3 m_currentPosition;
     glm::vec3 m_previousPosition;
     glm::vec3 m_previousPreviousPosition;
-    glm::vec3 m_force;
-    glm::vec3 m_velocity;
+    glm::vec3 m_force{0.f,0.f,0.f};
+    glm::vec3 m_velocity{0.f,0.f,0.f};
 
     float m_bouncing;
     float m_friction{0.8f};
@@ -73,6 +79,10 @@ class Particle {
     float m_timeSinceLastUpdate{0.f};
     float m_dt;
     float m_size{0.05f};
+    float m_stiffness{0.2f};
+    float m_damping{0.5f};
+    float m_mass{1.f};
+    float m_desiredLength;
     bool m_fixed;
 
     bool m_firstUpdate{true};

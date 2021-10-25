@@ -88,6 +88,7 @@ void RenderSystem::createPipeline(VkRenderPass renderPass, bool useMSAA) {
     PipelineConfigInfo hairPipelineConfig = pipelineConfig;
     hairPipelineConfig.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
     hairPipelineConfig.inputAssemblyInfo.primitiveRestartEnable = VK_TRUE;
+    hairPipelineConfig.rasterizationInfo.lineWidth = 5.f;
 
     PipelineConfigInfo skyboxPipelineConfig = pipelineConfig;
     skyboxPipelineConfig.rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;
@@ -208,6 +209,7 @@ void RenderSystem::renderEntities(FrameInfo frameInfo) {
     pipelines->meshes->bind(commandBuffer);
     for (auto& entity : scene.getEntities()) {
         if (!entity->mesh) continue;
+        if (entity->particle && !scene.showParticles) continue;
         entity->render(projectionView, frameInfo, pipelineLayout);
     }
 

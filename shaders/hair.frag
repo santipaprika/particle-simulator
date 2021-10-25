@@ -42,14 +42,14 @@ vec4 getSpecular(vec4 lightColor0, vec4 specularColor, vec3 N, vec3 T, vec3 V, v
 
 void main() {
     
-    vec3 L = DIRECTION_TO_LIGHT;
-    vec3 V = normalize(ubo.camPos - positionWS);
-    vec3 T = normalize(directionWS);
-    vec3 VTPlaneNormal = normalize(cross(V, T));
-    vec3 N = normalize(cross(T, VTPlaneNormal));
+    // vec3 L = DIRECTION_TO_LIGHT;
+    // vec3 V = normalize(ubo.camPos - positionWS);
+    // vec3 T = normalize(directionWS);
+    // vec3 VTPlaneNormal = normalize(cross(V, T));
+    // vec3 N = normalize(cross(T, VTPlaneNormal));
 
-    vec4 diffuse = getAmbientAndDiffuse(vec4(1.0), vec4(fragColor,1.0), N, L);
-    vec4 specular = getSpecular(vec4(1.0), vec4(1.0), N, T, V, L, 0.1, 0.1);
+    // vec4 diffuse = getAmbientAndDiffuse(vec4(1.0), vec4(fragColor,1.0), N, L);
+    // vec4 specular = getSpecular(vec4(1.0), vec4(1.0), N, T, V, L, 0.1, 0.1);
 
-    outColor = diffuse + specular;
+    outColor = vec4(0.0);
 }

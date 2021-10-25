@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
+#include <Particle.h>
 
 class Particle;
 
@@ -14,6 +15,7 @@ namespace vkr {
 
 struct KinematicEntities;
 struct TransformComponent;
+class Entity;
 
 class Hair {
    public:
@@ -49,7 +51,7 @@ class Hair {
 
     void renderUI();
     Builder builder;
-    int numStrands = 5;
+    int numStrands{5};
 
     void update(float dt, KinematicEntities &kinematicEntities, TransformComponent& transform);
     void updateBuffers();
@@ -75,6 +77,19 @@ class Hair {
     VkBuffer indexBuffer{VK_NULL_HANDLE};
     VkDeviceMemory indexBufferMemory;
     uint32_t indexCount;
+
+    float segmentLength;
+    float strandMass{0.5f};
+
+    float stiffness{1000.f};
+    float damping{4.f};
+    float bouncing{0.7f};
+    float friction{0.01f};
+    
+    bool fixed{true};
+    Particle::UpdateMethod solver{Particle::UpdateMethod::EulerSemi};
+
+    glm::vec3 gravity{0.f, -0.8f, 0.f};
 };
 
 }  // namespace vkr

@@ -36,6 +36,8 @@ class Scene {
     void updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout);
     void renderUI();
 
+    bool showParticles{false};
+
    private:
     std::vector<std::shared_ptr<Entity>> entities;
     std::vector<std::shared_ptr<Entity>> particleSystemEntities;
@@ -51,6 +53,7 @@ class Scene {
 
     std::shared_ptr<Mesh> sphereMesh;
     void createBox();
+
 };
 
 }  // namespace vkr

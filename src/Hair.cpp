@@ -1,10 +1,10 @@
 #include <Particle.h>
 #include <imgui.h>
 
+#include <Entity.hpp>
 #include <Hair.hpp>
 #include <Scene.hpp>
 #include <Utils.hpp>
-#include <Entity.hpp>
 
 namespace vkr {
 
@@ -104,18 +104,29 @@ void Hair::Builder::loadHairModel(const char *filename, cyHairFile &hairfile, fl
     printf("Number of indices = %zd\n", indices.size());
 }
 
-void Hair::loadParticles(TransformComponent& transform) {
-    for (auto& vertex : builder.vertices) {
+void Hair::loadParticles(TransformComponent &transform) {
+    for (auto &vertex : builder.vertices) {
         // Create particle attached to vertex
         glm::vec3 worldPos = transform.mat4() * glm::vec4(vertex.position, 1.f);
 
         std::shared_ptr<Particle> particle = std::make_shared<Particle>(worldPos.x, worldPos.y, worldPos.z);
-        particle->setBouncing(0.8f);
-        particle->setFriction(0.1f);
-        particle->setForce(glm::vec3(0.f, -5.f, 0.f));
-        particle->setSize(0.05f);
-        particle->setLifetime(100);
+        particle->setBouncing(bouncing);
+        particle->setFriction(friction);
+        particle->setForce(gravity);
+        particle->setSize(0.02f);
+        particle->setLifetime(1000);
+        particle->setMass(strandMass / (builder.defaultSegments + 1));
+        particle->setStiffness(stiffness);
+        particle->setDamping(damping);
+
+        // First initialization
+        particle->updateParticle(particle->getTimeStep(), solver);
+        
         builder.verticesParticles.push_back(std::move(particle));
+
+    }
+    for (int i = 0; i < numStrands * (builder.defaultSegments + 1); i++) {
+        builder.verticesParticles[i]->setDesiredLength(glm::length(builder.verticesParticles[i + 1]->getCurrentPosition() - builder.verticesParticles[i]->getCurrentPosition()));
     }
 }
 
@@ -130,7 +141,7 @@ void Hair::createVertexBuffers(const std::vector<Vertex> &vertices, int numSegme
         vkFreeMemory(device.device(), vertexBufferMemory, nullptr);
     }
 
-    VkDeviceSize bufferSize = sizeof(Vertex) * static_cast<uint32_t>(numStrands * numSegments);
+    VkDeviceSize bufferSize = sizeof(Vertex) * static_cast<uint32_t>(numStrands * (numSegments + 1));
 
     device.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -155,7 +166,7 @@ void Hair::createIndexBuffers(const std::vector<uint32_t> &indices, int numSegme
         vkFreeMemory(device.device(), indexBufferMemory, nullptr);
     }
 
-    indexCount = static_cast<uint32_t>(numStrands * (numSegments));
+    indexCount = static_cast<uint32_t>(numStrands * (numSegments + 2));
     hasIndexBuffer = indexCount > 0;
 
     if (!hasIndexBuffer) {
@@ -205,17 +216,7 @@ void Hair::bind(VkCommandBuffer commandBuffer) {
     }
 }
 
-void Hair::renderUI() {
-    ImGui::Text("Number of strands:");
-    ImGui::SliderInt("##nStrands", &numStrands, 1, 100);
-    if (ImGui::IsItemEdited()) {
-        vkDeviceWaitIdle(device.device());
-        createVertexBuffers(builder.vertices, builder.defaultSegments);
-        createIndexBuffers(builder.indices, builder.defaultSegments);
-    }
-}
-
-void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformComponent& transform) {
+void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformComponent &transform) {
     static float timeSinceLastUpdate{0.f};
     timeSinceLastUpdate += dt;
     int numSteps = static_cast<int>(std::floor(timeSinceLastUpdate / builder.verticesParticles[0]->getTimeStep()));
@@ -223,15 +224,38 @@ void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformCompo
 
     glm::mat4 modelInv = glm::inverse(transform.mat4());
 
-    for (int i = 0; i < numStrands * builder.defaultSegments; i++) {
-        builder.verticesParticles[i]->updateInScene(dt, numSteps, kinematicEntities, Particle::UpdateMethod::EulerSemi);
+    for (int step = 0; step < numSteps; step++) {
+        // Spring forces update pass
+        // for (int i = 0; i < numStrands * builder.defaultSegments; i++) {
+        //     // Forces for last particle in strand is computed in the previous one
+        //     int localIdx = i % builder.defaultSegments;
+        //     if (localIdx != builder.defaultSegments - 1)
+        //         builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[i + 1], gravity, localIdx == 0);
+        // }
+
+        // TODO check which one has better performance
+        for (int s = 0; s < numStrands; s++) {
+            int offset = s * (builder.defaultSegments + 1);
+            for (int i = 0; i < builder.defaultSegments /*+ 1 - 1*/; i++) {
+                builder.verticesParticles[offset + i]->addSpringForce(builder.verticesParticles[offset + i + 1], gravity, i == 0);
+            }
+        }
+
+        // Regular particle update and collision pass
+        for (int i = 0; i < numStrands * (builder.defaultSegments + 1); i++) {
+            if (!fixed || i % (builder.defaultSegments+1) != 0)
+                builder.verticesParticles[i]->updateInScene(dt, numSteps, kinematicEntities, solver);
+        }
+    }
+
+    for (int i = 0; i < numStrands * (builder.defaultSegments + 1); i++) {
         builder.vertices[i].position = modelInv * glm::vec4(builder.verticesParticles[i]->getCurrentPosition(), 1.f);
     }
     updateBuffers();
 }
 
 void Hair::updateBuffers() {
-    VkDeviceSize bufferSize = sizeof(Vertex) * static_cast<uint32_t>(numStrands * builder.defaultSegments);
+    VkDeviceSize bufferSize = sizeof(Vertex) * static_cast<uint32_t>(numStrands * (builder.defaultSegments + 1));
 
     memcpy(data, builder.vertices.data(), static_cast<size_t>(bufferSize));
     device.copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
@@ -256,6 +280,78 @@ std::vector<VkVertexInputAttributeDescription> Hair::Vertex::getAttributeDescrip
         {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, direction)});
 
     return attributeDescriptions;
+}
+
+void Hair::renderUI() {
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Solver");
+    const char *items[] = {"Euler Explicit", "Euler Semi-implicit", "Verlet"};
+    ImGui::Combo("##solver", (int *)&solver, items, IM_ARRAYSIZE(items));
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Number of strands:");
+    ImGui::SliderInt("##nStrands", &numStrands, 1, 100);
+    if (ImGui::IsItemEdited()) {
+        vkDeviceWaitIdle(device.device());
+        createVertexBuffers(builder.vertices, builder.defaultSegments);
+        createIndexBuffers(builder.indices, builder.defaultSegments);
+    }
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Checkbox("Fixed", &fixed);
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Strand mass");
+    ImGui::SliderFloat("##hairMass", &strandMass, 0.001f, 50.f);
+    if (ImGui::IsItemEdited()) {
+        for (auto &particle : builder.verticesParticles) {
+            particle->setMass(strandMass / builder.defaultSegments);
+        }
+    }
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Stiffness");
+    ImGui::SliderFloat("##hairElast", &stiffness, 0.001f, 1000.f);
+    if (ImGui::IsItemEdited()) {
+        for (auto &particle : builder.verticesParticles) {
+            particle->setStiffness(stiffness);
+        }
+    }
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Damping");
+    ImGui::SliderFloat("##hairDamp", &damping, 0.001f, 10.f);
+    if (ImGui::IsItemEdited()) {
+        for (auto &particle : builder.verticesParticles) {
+            particle->setDamping(damping);
+        }
+    }
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Bouncing");
+    ImGui::SliderFloat("##hairBounce", &bouncing, 0.001f, 1.f);
+    if (ImGui::IsItemEdited()) {
+        for (auto &particle : builder.verticesParticles) {
+            particle->setBouncing(bouncing);
+        }
+    }
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Friction");
+    ImGui::SliderFloat("##hairFriction", &friction, 0.001f, 1.f);
+    if (ImGui::IsItemEdited()) {
+        for (auto &particle : builder.verticesParticles) {
+            particle->setDamping(friction);
+        }
+    }
+
+    ImGui::Text("Force");
+    ImGui::SliderFloat3("##force", (float *)&gravity, -1.5f, 1.5f);
+    // if (ImGui::IsItemEdited()) {
+    //     for (auto &particle : builder.verticesParticles) {
+    //         particle->setForce(gravity);
+    //     }
+    // }
 }
 
 }  // namespace vkr

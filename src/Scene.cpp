@@ -44,11 +44,11 @@ void Scene::loadEntities(Scenario scenario) {
     sphere->colliderType = Entity::ColliderType::SPHERE;
     entities.push_back(sphere);
 
+    particleMaterial = std::make_shared<Material>(blankTexture);
+    particleMaterial->setDiffuseColor(glm::vec4(1.f, 0.f, 0.f, 1.f));
+
     switch (scenario) {
         case SCENE1: {
-            particleMaterial = std::make_shared<Material>(blankTexture);
-            particleMaterial->setDiffuseColor(glm::vec4(1.f, 0.f, 0.f, 1.f));
-
             // Triangle
             std::shared_ptr<Mesh> mesh = Mesh::createTriangle(device);
             auto triangle = std::make_shared<Entity>(Entity::createEntity());
@@ -81,11 +81,21 @@ void Scene::loadEntities(Scenario scenario) {
             hairEntity->material = material;
             hairEntity->transform.translation = {0.f, 4.5f, 0.f};
             hairEntity->transform.scale = {0.03f, 0.03f, 0.03f};
-            // hairEntity->transform.rotation = {PI_2, PI_2, 0};
+            hairEntity->transform.rotation = {PI_2, PI_2, 0};
 
             hairEntity->hair->loadParticles(hairEntity->transform);
+            for (int i = 0; i < (hairEntity->hair->builder.defaultSegments+1) * hairEntity->hair->numStrands; i++) {
+                auto p = std::make_shared<Entity>(Entity::createEntity());
+                p->particle = hairEntity->hair->builder.verticesParticles[i];
+                p->transform.translation = p->particle->getCurrentPosition();
+                p->transform.scale = glm::vec3(0.02f, 0.02f, 0.02f);
+                p->mesh = mesh;
+                p->material = particleMaterial;
+                entities.push_back(std::move(p));
+            }
 
             entities.push_back(std::move(hairEntity));
+
         } break;
         default: {
             break;
@@ -122,7 +132,7 @@ void Scene::loadParticles() {
 }
 
 void Scene::initializeKinematicEntities() {
-    float particleSize = 0.05f;
+    float particleSize = 0.02f;
 
     for (auto& entity : entities) {
         if (entity->colliderType == Entity::ColliderType::NONE) continue;
@@ -219,8 +229,10 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
 
 void Scene::renderUI() {
     for (auto& entity : entities) {
-        if (entity->hair)
+        if (entity->hair) {
+            ImGui::Checkbox("Show Particles", &showParticles);
             entity->hair->renderUI();
+        }
     }
 
     for (auto& particleSystemEntity : particleSystemEntities) {
@@ -231,7 +243,7 @@ void Scene::renderUI() {
 void Scene::createBox() {
     std::string models_path(MODELS_PATH);
     std::shared_ptr<Mesh> mesh = Mesh::createModelFromFile(device, (models_path + "/cube.obj").c_str());
-    float particleSize = 0.05f;
+    float particleSize = 0.02f;
     float wallSize = 3.f;
 
     // Floor ---------------------------------------------
