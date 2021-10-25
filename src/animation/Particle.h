@@ -61,23 +61,24 @@ class Particle {
     bool collisionParticleTriangle(Plane& p, std::array<glm::vec3, 3>& vertices);
     bool collisionParticleSphere(glm::vec3 center, float radius, Plane& plane, bool& bugged);
     void correctCollisionParticlePlain(Plane& p);
+    void checkAndCorrectCollisionParticlePlane(std::vector<std::shared_ptr<vkr::Entity>>& planes, int depth = 0);
 
     float computeTriangleArea(glm::vec3 edge1, glm::vec3 edge2);
-    void addSpringForce(std::shared_ptr<Particle> nextParticle, glm::vec3 &gravity, bool isFirstParticle = false);
+    void addSpringForce(std::shared_ptr<Particle> nextParticle, glm::vec3& gravity, bool isFirstParticle = false);
 
    private:
     glm::vec3 m_currentPosition;
     glm::vec3 m_previousPosition;
     glm::vec3 m_previousPreviousPosition;
-    glm::vec3 m_force{0.f,0.f,0.f};
-    glm::vec3 m_velocity{0.f,0.f,0.f};
+    glm::vec3 m_force{0.f, 0.f, 0.f};
+    glm::vec3 m_velocity{0.f, 0.f, 0.f};
 
     float m_bouncing;
     float m_friction{0.8f};
     float m_lifetime;
     float m_currentTime{0.f};
     float m_timeSinceLastUpdate{0.f};
-    float m_dt;
+    float m_dt{0.001f};
     float m_size{0.05f};
     float m_stiffness{0.2f};
     float m_damping{0.5f};

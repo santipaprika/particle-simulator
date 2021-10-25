@@ -81,11 +81,11 @@ class Hair {
     float segmentLength;
     float strandMass{0.5f};
 
-    float stiffness{1000.f};
-    float damping{4.f};
+    float stiffness{500.f};
+    float damping{0.4f};
     float bouncing{0.7f};
     float friction{0.01f};
-    
+
     bool fixed{true};
     Particle::UpdateMethod solver{Particle::UpdateMethod::EulerSemi};
 

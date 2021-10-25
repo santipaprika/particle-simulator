@@ -118,9 +118,6 @@ void Hair::loadParticles(TransformComponent &transform) {
         particle->setMass(strandMass / (builder.defaultSegments + 1));
         particle->setStiffness(stiffness);
         particle->setDamping(damping);
-
-        // First initialization
-        particle->updateParticle(particle->getTimeStep(), solver);
         
         builder.verticesParticles.push_back(std::move(particle));
 

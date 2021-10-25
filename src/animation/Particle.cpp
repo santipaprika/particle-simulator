@@ -6,10 +6,10 @@
 
 #define EPS 0.001f
 
-Particle::Particle() : m_currentPosition(0, 0, 0), m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(0.f), m_lifetime(50), m_fixed(false), m_dt(0.0005f) {
+Particle::Particle() : m_currentPosition(0, 0, 0), m_previousPosition(0, 0, 0), m_bouncing(0.f), m_lifetime(50), m_fixed(false) {
 }
 
-Particle::Particle(const float& x, const float& y, const float& z) : m_previousPosition(0, 0, 0), m_velocity(0, 0, 0), m_force(0, 0, 0), m_bouncing(0.f), m_lifetime(50), m_fixed(false), m_dt(0.0005f) {
+Particle::Particle(const float& x, const float& y, const float& z) : m_previousPosition(0, 0, 0), m_bouncing(0.f), m_lifetime(50), m_fixed(false) {
     m_currentPosition.x = x;
     m_currentPosition.y = y;
     m_currentPosition.z = z;
@@ -150,13 +150,12 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
 }
 
 void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntities& kinematicEntities, UpdateMethod method) {
-
+    
+    // call solver types: EulerOrig, EulerSemi and Verlet(to be implemented)
+    updateParticle(m_dt, method);
+    
     //Check collisions
-    for (auto planeEntity : kinematicEntities.kinematicPlaneEntities) {
-        if (collisionParticlePlane(*planeEntity->plane)) {
-            correctCollisionParticlePlain(*planeEntity->plane);
-        }
-    }
+    checkAndCorrectCollisionParticlePlane(kinematicEntities.kinematicPlaneEntities);
 
     for (auto triangleEntity : kinematicEntities.kinematicTriangleEntities) {
         // Check both triangle faces (in different planes to compensate particle size)
@@ -187,9 +186,6 @@ void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntiti
         }
         bugged = false;
     }
-
-    // call solver types: EulerOrig, EulerSemi and Verlet(to be implemented)
-    updateParticle(m_dt, method);
 }
 
 void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle, glm::vec3& gravity, bool isFirstParticle) {
@@ -207,18 +203,20 @@ void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle, glm::vec3&
     glm::vec3 f = (fs + fd) * dir;
 
     // Apply force to the current and next particle
-    if (!isFirstParticle)
-        addForce(f);
-
+    if (isFirstParticle) {
+        setForce(gravity);
+    } else {
+        addForce(f);  // Current particle will already contain gravity force added by previous one
+    }
     nextParticle->setForce(gravity - f);
 }
 
 bool Particle::collisionParticlePlane(Plane& p) {
-    float sign;
+    float sign, sign2;
     sign = glm::dot(m_currentPosition, p.normal) + p.d;
-    sign *= glm::dot(m_previousPosition, p.normal) + p.d;
+    sign2 = glm::dot(m_previousPosition, p.normal) + p.d;
 
-    return sign <= 0;
+    return sign < 0 && sign2 > 0;
 }
 
 bool Particle::collisionParticleTriangle(Plane& p, std::array<glm::vec3, 3>& vertices) {
@@ -285,6 +283,23 @@ void Particle::correctCollisionParticlePlain(Plane& p) {
 
     // to apply in verlet
     m_firstUpdate = true;
+}
+
+void Particle::checkAndCorrectCollisionParticlePlane(std::vector<std::shared_ptr<vkr::Entity>>& planes, int depth) {
+    if (depth == 1)
+        int a = 1;
+    for (int i = 0; i < 5; i++) {
+        if (collisionParticlePlane(*(planes[i]->plane))) {
+            correctCollisionParticlePlain(*(planes[i]->plane));
+
+            for (int j = 0; j < i; j++) {
+                if (collisionParticlePlane(*(planes[j]->plane))) {
+                    correctCollisionParticlePlain(*(planes[j]->plane));
+                }
+                // checkAndCorrectCollisionParticlePlane(planes, 1);
+            }
+        }
+    }
 }
 
 float Particle::computeTriangleArea(glm::vec3 edge1, glm::vec3 edge2) {
