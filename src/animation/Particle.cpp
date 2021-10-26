@@ -135,7 +135,7 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
         } break;
         case UpdateMethod::Verlet: {
             if (m_firstUpdate) {
-                m_previousPreviousPosition = m_currentPosition - dt * dt * m_force / m_mass;
+                m_previousPreviousPosition = m_currentPosition - dt * m_velocity;
                 m_firstUpdate = false;
             } else {
                 m_previousPreviousPosition = m_previousPosition;
@@ -181,8 +181,8 @@ void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntiti
     bool bugged{false};
     for (auto sphereEntity : kinematicEntities.kinematicSphereEntities) {
         if (collisionParticleSphere(sphereEntity->transform.translation, sphereEntity->transform.scale.x, plane, bugged)) {
-            if (bugged) m_currentPosition = m_previousPosition;
-            else correctCollisionParticlePlain(plane);
+            if (!bugged) 
+                correctCollisionParticlePlain(plane);
         }
         bugged = false;
     }
@@ -268,10 +268,9 @@ bool Particle::collisionParticleSphere(glm::vec3 center, float radius, Plane& pl
     }
 
     // Fix precision errors
-    glm::vec3 P = m_previousPosition;
-    plane.setPlaneNormal(glm::normalize(P - center));
-    plane.setPlanePoint(P);
+    m_currentPosition += (m_currentPosition-m_previousPosition) * glm::normalize(m_previousPosition-center);
     bugged = true;
+    m_firstUpdate = true;
     return true;
 }
 

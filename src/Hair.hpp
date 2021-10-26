@@ -83,11 +83,11 @@ class Hair {
 
     float stiffness{1000.f};
     float damping{4.f};
-    float bouncing{0.1f};
-    float friction{0.8f};
+    float bouncing{0.5f};
+    float friction{0.5f};
 
     bool fixed{true};
-    Particle::UpdateMethod solver{Particle::UpdateMethod::Verlet};
+    Particle::UpdateMethod solver{Particle::UpdateMethod::EulerSemi};
 
     glm::vec3 gravity{0.f, -0.8f, 0.f};
 };

@@ -122,7 +122,7 @@ void Hair::loadParticles(TransformComponent &transform) {
         builder.verticesParticles.push_back(std::move(particle));
 
     }
-    for (int i = 0; i < numStrands * (builder.defaultSegments + 1); i++) {
+    for (int i = 0; i < builder.vertices.size() - 1; i++) {
         builder.verticesParticles[i]->setDesiredLength(glm::length(builder.verticesParticles[i + 1]->getCurrentPosition() - builder.verticesParticles[i]->getCurrentPosition()));
     }
 }
@@ -223,14 +223,6 @@ void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformCompo
 
     for (int step = 0; step < numSteps; step++) {
         // Spring forces update pass
-        // for (int i = 0; i < numStrands * builder.defaultSegments; i++) {
-        //     // Forces for last particle in strand is computed in the previous one
-        //     int localIdx = i % builder.defaultSegments;
-        //     if (localIdx != builder.defaultSegments - 1)
-        //         builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[i + 1], gravity, localIdx == 0);
-        // }
-
-        // TODO check which one has better performance
         for (int s = 0; s < numStrands; s++) {
             int offset = s * (builder.defaultSegments + 1);
             for (int i = 0; i < builder.defaultSegments /*+ 1 - 1*/; i++) {
@@ -287,7 +279,7 @@ void Hair::renderUI() {
 
     ImGui::Separator();  // ---------------------------------
     ImGui::Text("Number of strands:");
-    ImGui::SliderInt("##nStrands", &numStrands, 1, 100);
+    ImGui::SliderInt("##nStrands", &numStrands, 1, 500);
     if (ImGui::IsItemEdited()) {
         vkDeviceWaitIdle(device.device());
         createVertexBuffers(builder.vertices, builder.defaultSegments);
@@ -308,7 +300,7 @@ void Hair::renderUI() {
 
     ImGui::Separator();  // ---------------------------------
     ImGui::Text("Stiffness");
-    ImGui::SliderFloat("##hairElast", &stiffness, 0.001f, 2000.f);
+    ImGui::SliderFloat("##hairStiff", &stiffness, 0.001f, 3000.f);
     if (ImGui::IsItemEdited()) {
         for (auto &particle : builder.verticesParticles) {
             particle->setStiffness(stiffness);
@@ -343,12 +335,7 @@ void Hair::renderUI() {
     }
 
     ImGui::Text("Force");
-    ImGui::SliderFloat3("##force", (float *)&gravity, -1.5f, 1.5f);
-    // if (ImGui::IsItemEdited()) {
-    //     for (auto &particle : builder.verticesParticles) {
-    //         particle->setForce(gravity);
-    //     }
-    // }
+    ImGui::SliderFloat3("##force", (float *)&gravity, -2.f, 2.f);
 }
 
 }  // namespace vkr

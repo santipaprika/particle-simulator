@@ -84,7 +84,7 @@ void Scene::loadEntities(Scenario scenario) {
             hairEntity->transform.rotation = {PI_2, PI_2, 0};
 
             hairEntity->hair->loadParticles(hairEntity->transform);
-            for (int i = 0; i < (hairEntity->hair->builder.defaultSegments+1) * hairEntity->hair->numStrands; i++) {
+            for (int i = 0; i < (hairEntity->hair->builder.defaultSegments + 1) * hairEntity->hair->numStrands; i++) {
                 auto p = std::make_shared<Entity>(Entity::createEntity());
                 p->particle = hairEntity->hair->builder.verticesParticles[i];
                 p->transform.translation = p->particle->getCurrentPosition();
@@ -232,6 +232,17 @@ void Scene::renderUI() {
         if (entity->hair) {
             ImGui::Checkbox("Show Particles", &showParticles);
             entity->hair->renderUI();
+
+            // ImGui::Separator();  // --------------
+            // ImGui::Text("Position");
+            // ImGui::SliderFloat3("##pos", (float*)&entity->transform.translation, -5.5f, 5.5f);
+            // if (ImGui::IsItemEdited()) {
+            //     for (int i=0; i<entity->hair->builder.verticesParticles.size(); i++) {
+            //         std::shared_ptr<Particle> particle = entity->hair->builder.verticesParticles[i];
+            //         particle->setPreviousPosition(particle->getCurrentPosition());
+            //         particle->setPosition(entity->transform.mat4() * glm::vec4(entity->hair->builder.vertices[i].position,1.f));
+            //     }
+            // }
         }
     }
 
