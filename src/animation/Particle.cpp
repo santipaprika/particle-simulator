@@ -130,7 +130,7 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
         } break;
         case UpdateMethod::EulerSemi: {
             m_previousPosition = m_currentPosition;
-            m_velocity += m_force * dt / m_mass;
+            m_velocity = m_airFriction * (m_velocity + m_force * dt / m_mass);
             m_currentPosition += m_velocity * dt;
         } break;
         case UpdateMethod::Verlet: {
@@ -142,6 +142,7 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
             }
             m_previousPosition = m_currentPosition;
             m_currentPosition = 1.9999f * m_previousPosition - 0.9999f * m_previousPreviousPosition + dt * dt * m_force / m_mass;
+            m_currentPosition += (1-m_airFriction)*(m_previousPosition - m_currentPosition);
             m_velocity = (m_currentPosition - m_previousPosition) / dt;
 
         } break;

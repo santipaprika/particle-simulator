@@ -38,6 +38,7 @@ class Particle {
     void setMass(float mass) { m_mass = mass; }
     void setStiffness(float stiffness) { m_stiffness = stiffness; }
     void setDamping(float damping) { m_damping = damping; }
+    void setAirFriction(float airFriction) { m_airFriction = airFriction; }
     void setDesiredLength(float desiredLength) { m_desiredLength = desiredLength; }
     void addTime(float time) { m_currentTime += time; }
 
@@ -82,6 +83,7 @@ class Particle {
     float m_size{0.05f};
     float m_stiffness{0.2f};
     float m_damping{0.5f};
+    float m_airFriction{0.993f};
     float m_mass{1.f};
     float m_desiredLength;
     bool m_fixed;

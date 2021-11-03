@@ -85,6 +85,7 @@ class Hair {
     float damping{4.f};
     float bouncing{0.5f};
     float friction{0.5f};
+    float airFriction{0.993f};
 
     bool fixed{true};
     Particle::UpdateMethod solver{Particle::UpdateMethod::EulerSemi};

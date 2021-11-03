@@ -334,6 +334,15 @@ void Hair::renderUI() {
         }
     }
 
+    ImGui::Separator();  // ---------------------------------
+    ImGui::Text("Air Friction");
+    ImGui::SliderFloat("##hairAirFriction", &airFriction, 0.99f, 1.f);
+    if (ImGui::IsItemEdited()) {
+        for (auto &particle : builder.verticesParticles) {
+            particle->setAirFriction(airFriction);
+        }
+    }
+
     ImGui::Text("Force");
     ImGui::SliderFloat3("##force", (float *)&gravity, -2.f, 2.f);
 }
