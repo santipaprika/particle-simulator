@@ -10,6 +10,7 @@
 #include <ParticleSystem.h>
 
 #include <Buffer.hpp>
+#include <Cloth.hpp>
 #include <Hair.hpp>
 #include <Light.hpp>
 #include <Material.hpp>
@@ -79,6 +80,7 @@ class Entity {
     // COMPONENTS (Might be a vector?)
     std::shared_ptr<Mesh> mesh{nullptr};
     std::shared_ptr<Hair> hair{nullptr};
+    std::shared_ptr<Cloth> cloth{nullptr};
     std::shared_ptr<Material> material{nullptr};
     std::shared_ptr<Light> light{nullptr};
     std::shared_ptr<Particle> particle{nullptr};

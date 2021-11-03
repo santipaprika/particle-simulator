@@ -13,7 +13,7 @@ Scene::~Scene() {
 }
 
 void Scene::initialize() {
-    loadEntities();
+    loadEntities(SCENE3);
     loadLights();
     loadCameraSkybox();
     initializeKinematicEntities();
@@ -96,6 +96,30 @@ void Scene::loadEntities(Scenario scenario) {
 
             entities.push_back(std::move(hairEntity));
 
+        } break;
+
+        case SCENE3: {
+            // Cloth
+            auto clothEntity = std::make_shared<Entity>(Entity::createEntity());
+            clothEntity->cloth = std::make_shared<Cloth>(device, 10, 0.2f);
+
+            clothEntity->material = material;
+            clothEntity->transform.translation = {-1.f, 4.5f, 0.f};
+            // clothEntity->transform.scale = {1.f,1.f,};
+            // clothEntity->transform.rotation = {PI_2, PI_2, 0};
+
+            clothEntity->cloth->loadParticles(clothEntity->transform);
+            for (int i = 0; i < clothEntity->cloth->builder.vertices.size(); i++) {
+                auto p = std::make_shared<Entity>(Entity::createEntity());
+                p->particle = clothEntity->cloth->builder.verticesParticles[i];
+                p->transform.translation = p->particle->getCurrentPosition();
+                p->transform.scale = glm::vec3(0.02f, 0.02f, 0.02f);
+                p->mesh = mesh;
+                p->material = particleMaterial;
+                entities.push_back(std::move(p));
+            }
+
+            entities.push_back(std::move(clothEntity));
         } break;
         default: {
             break;
@@ -223,6 +247,8 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
     for (auto& entity : entities) {
         if (entity->hair) {
             entity->hair->update(dt, kinematicEntities, entity->transform);
+        } else if (entity->cloth) {
+            entity->cloth->update(dt, kinematicEntities, entity->transform);
         }
     }
 }
@@ -243,6 +269,11 @@ void Scene::renderUI() {
             //         particle->setPosition(entity->transform.mat4() * glm::vec4(entity->hair->builder.vertices[i].position,1.f));
             //     }
             // }
+        }
+
+        if (entity->cloth) {
+            ImGui::Checkbox("Show Particles", &showParticles);
+            entity->cloth->renderUI();
         }
     }
 

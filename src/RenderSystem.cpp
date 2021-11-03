@@ -193,7 +193,7 @@ void RenderSystem::createDescriptorPool(const std::vector<PoolSize>& poolSizes, 
 
 void RenderSystem::createDescriptorSets() {
     for (auto& entity : scene.getEntities()) {
-        if ((entity->mesh && entity->material) || entity->hair )
+        if (((entity->mesh || entity->cloth) && entity->material) || entity->hair)
             entity->updateDescriptorSet(device, descriptorPool, descriptorSetLayout);
     }
     if (scene.getMainCamera().hasSkybox())
@@ -208,7 +208,7 @@ void RenderSystem::renderEntities(FrameInfo frameInfo) {
     // TRIANGULAR MESHES
     pipelines->meshes->bind(commandBuffer);
     for (auto& entity : scene.getEntities()) {
-        if (!entity->mesh) continue;
+        if (!entity->mesh && !entity->cloth) continue;
         if (entity->particle && !scene.showParticles) continue;
         entity->render(projectionView, frameInfo, pipelineLayout);
     }

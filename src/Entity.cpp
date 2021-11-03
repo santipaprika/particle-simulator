@@ -99,9 +99,15 @@ void Entity::render(glm::mat4 camProjectionView, FrameInfo& frameInfo, VkPipelin
         sizeof(SimplePushConstantData),
         &push);
 
-    mesh->bind(commandBuffer);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-    mesh->draw(commandBuffer);
+    if (mesh) {
+        mesh->bind(commandBuffer);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        mesh->draw(commandBuffer);
+    } else { // CLOTH
+        cloth->bind(commandBuffer);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        cloth->draw(commandBuffer);
+    }
 }
 
 void Entity::createUniformBuffer(Device& device) {
