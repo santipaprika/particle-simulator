@@ -77,6 +77,7 @@ void Cloth::loadParticles(TransformComponent &transform) {
         particle->setMass(clothMass / (builder.gridSize * builder.gridSize));
         particle->setStiffness(stiffness);
         particle->setDamping(damping);
+        particle->setAirFriction(airFriction);
 
         builder.verticesParticles.push_back(std::move(particle));
     }
@@ -201,9 +202,9 @@ void Cloth::update(float dt, KinematicEntities &kinematicEntities, TransformComp
     int size = builder.gridSize;
     for (int i = 1; i < size - 1; i++) {
         for (int j = 1; j < size - 1; j++) {
-            glm::vec3 normal = glm::cross(builder.vertices[i * size + j + 1].normal - builder.vertices[i * size + j - 1].normal,
-                                          builder.vertices[(i + 1) * size + j].normal - builder.vertices[(i - 1) * size + j].normal);
-            builder.vertices[i].normal = normalInv * glm::vec4(normal, 1.f);
+            glm::vec3 normal = glm::cross(builder.vertices[i * size + j + 1].position - builder.vertices[i * size + j - 1].position,
+                                          builder.vertices[(i + 1) * size + j].position - builder.vertices[(i - 1) * size + j].position);
+            builder.vertices[i * size + j].normal = glm::normalize(normal);
         }
     }
 

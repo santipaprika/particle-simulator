@@ -83,7 +83,7 @@ class Particle {
     float m_size{0.05f};
     float m_stiffness{0.2f};
     float m_damping{0.5f};
-    float m_airFriction{0.993f};
+    float m_airFriction{1.f};
     float m_mass{1.f};
     float m_desiredLength;
     bool m_fixed;

@@ -118,6 +118,7 @@ void Hair::loadParticles(TransformComponent &transform) {
         particle->setMass(strandMass / (builder.defaultSegments + 1));
         particle->setStiffness(stiffness);
         particle->setDamping(damping);
+        particle->setAirFriction(airFriction);
         
         builder.verticesParticles.push_back(std::move(particle));
 
