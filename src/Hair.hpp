@@ -59,6 +59,7 @@ class Hair {
    private:
     void createVertexBuffers(const std::vector<Vertex> &vertices, int numSegments);
     void createIndexBuffers(const std::vector<uint32_t> &indices, int numSegments);
+    void applyGravityForce(int offset);
 
     cyHairFile hair;
     float *dirs;

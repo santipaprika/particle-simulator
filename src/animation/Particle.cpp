@@ -203,13 +203,8 @@ void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle, glm::vec3&
     // Sum forces and set direction
     glm::vec3 f = (fs + fd) * dir;
 
-    // Apply force to the current and next particle
-    if (isFirstParticle) {
-        setForce(gravity);
-    } else {
-        addForce(f);  // Current particle will already contain gravity force added by previous one
-    }
-    nextParticle->setForce(gravity - f);
+    addForce(f);
+    nextParticle->addForce(-f);
 }
 
 bool Particle::collisionParticlePlane(Plane& p) {

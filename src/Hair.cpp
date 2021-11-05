@@ -119,9 +119,8 @@ void Hair::loadParticles(TransformComponent &transform) {
         particle->setStiffness(stiffness);
         particle->setDamping(damping);
         particle->setAirFriction(airFriction);
-        
-        builder.verticesParticles.push_back(std::move(particle));
 
+        builder.verticesParticles.push_back(std::move(particle));
     }
     for (int i = 0; i < builder.vertices.size() - 1; i++) {
         builder.verticesParticles[i]->setDesiredLength(glm::length(builder.verticesParticles[i + 1]->getCurrentPosition() - builder.verticesParticles[i]->getCurrentPosition()));
@@ -196,6 +195,12 @@ void Hair::createIndexBuffers(const std::vector<uint32_t> &indices, int numSegme
     vkFreeMemory(device.device(), l_stagingBufferMemory, nullptr);
 }
 
+void Hair::applyGravityForce(int offset) {
+    for (int i = 0; i < builder.defaultSegments + 1; i++) {
+        builder.verticesParticles[offset + i]->setForce(gravity);
+    }
+}
+
 void Hair::draw(VkCommandBuffer commandBuffer) {
     if (hasIndexBuffer) {
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
@@ -226,14 +231,15 @@ void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformCompo
         // Spring forces update pass
         for (int s = 0; s < numStrands; s++) {
             int offset = s * (builder.defaultSegments + 1);
-            for (int i = 0; i < builder.defaultSegments /*+ 1 - 1*/; i++) {
+            applyGravityForce(offset);
+            for (int i = 0; i < builder.defaultSegments/*+ 1 - 1*/; i++) {
                 builder.verticesParticles[offset + i]->addSpringForce(builder.verticesParticles[offset + i + 1], gravity, i == 0);
             }
         }
 
         // Regular particle update and collision pass
         for (int i = 0; i < numStrands * (builder.defaultSegments + 1); i++) {
-            if (!fixed || i % (builder.defaultSegments+1) != 0)
+            if (!fixed || i % (builder.defaultSegments + 1) != 0)
                 builder.verticesParticles[i]->updateInScene(dt, numSteps, kinematicEntities, solver);
         }
     }
