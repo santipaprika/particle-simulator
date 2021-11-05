@@ -233,7 +233,7 @@ void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformCompo
             int offset = s * (builder.defaultSegments + 1);
             applyGravityForce(offset);
             for (int i = 0; i < builder.defaultSegments/*+ 1 - 1*/; i++) {
-                builder.verticesParticles[offset + i]->addSpringForce(builder.verticesParticles[offset + i + 1], gravity, i == 0);
+                builder.verticesParticles[offset + i]->addSpringForce(builder.verticesParticles[offset + i + 1]);
             }
         }
 

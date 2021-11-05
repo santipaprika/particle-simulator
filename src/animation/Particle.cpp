@@ -189,7 +189,7 @@ void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntiti
     }
 }
 
-void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle, glm::vec3& gravity, bool isFirstParticle) {
+void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle) {
     glm::vec3 particlesDifference = nextParticle->getCurrentPosition() - m_currentPosition;
     float particlesDistance = glm::length(particlesDifference);
     glm::vec3 dir = particlesDifference / particlesDistance;
