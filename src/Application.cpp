@@ -40,8 +40,8 @@ void Application::run() {
     ImGuiHelper imGuiHelper(*this);
 
     auto viewerObject = Entity::createEntity();
-    viewerObject.transform.translation = glm::vec3(0,3,-3);
-    viewerObject.transform.rotation = glm::vec3(PI_2/5.f,0.f,0.f);
+    viewerObject.transform.translation = glm::vec3(0, 3, -3);
+    viewerObject.transform.rotation = glm::vec3(PI_2 / 5.f, 0.f, 0.f);
     InputController cameraController{};
 
     bool useMSAA = true;
@@ -61,11 +61,18 @@ void Application::run() {
 
         ImGui::Separator();
         scene.renderUI();
+        if (ImGui::Button("Reset")) {
+            vkDeviceWaitIdle(device.device());
+            vkDestroyDescriptorSetLayout(device.device(), renderSystem.getDescriptorSetLayout(), nullptr);
+            vkDestroyDescriptorPool(device.device(), renderSystem.getDescriptorPool(), nullptr);
+            scene.reset();
+            renderSystem.initializeEntities();
+        }
 
         ImGui::End();
 
         ImGui::ShowMetricsWindow();
-        
+
         ImGui::Render();
 
         auto newTime = std::chrono::high_resolution_clock::now();

@@ -138,6 +138,16 @@ void Scene::loadLights() {
     // lights.push_back(std::move(mainLight));
 }
 
+void Scene::reset() {
+    entities.clear();
+    kinematicEntities.kinematicPlaneEntities.clear();
+    kinematicEntities.kinematicSphereEntities.clear();
+    kinematicEntities.kinematicTriangleEntities.clear();
+
+    loadEntities(SCENE3);
+    initializeKinematicEntities();
+}
+
 void Scene::loadCameraSkybox() {
     mainCamera.setViewTarget(glm::vec3(0.f, 2.f, -2.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
     mainCamera.loadSkybox(device);

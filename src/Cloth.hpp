@@ -37,11 +37,17 @@ class Cloth {
         std::vector<std::shared_ptr<Particle>> verticesParticles{};
         std::vector<uint32_t> indices{};
 
+        // Vectors containing the internal forces neighboring particle indices for each particle.
+        std::vector<std::vector<int>> streachParticlesIdx;
+        std::vector<std::vector<std::array<int, 2>>> shearParticlesIdx;
+        std::vector<std::vector<std::array<int, 2>>> bendParticlesIdx;
+
         int gridSize;
         float cellSize;
 
         void createClothModel(int gridSize, float cellSize);
         void defineTrianglesInCell(int i, int j);
+        void reset();
     };
 
     Cloth(Device &device, int gridSize, float cellSize);
@@ -61,8 +67,7 @@ class Cloth {
    private:
     void createVertexBuffers(const std::vector<Vertex> &vertices);
     void createIndexBuffers(const std::vector<uint32_t> &indices);
-
-    float *dirs;
+    void applyGravityForce();
 
     Device &device;
 

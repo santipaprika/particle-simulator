@@ -79,7 +79,7 @@ class Particle {
     float m_lifetime;
     float m_currentTime{0.f};
     float m_timeSinceLastUpdate{0.f};
-    float m_dt{0.002f};
+    float m_dt{0.001f};
     float m_size{0.05f};
     float m_stiffness{0.2f};
     float m_damping{0.5f};

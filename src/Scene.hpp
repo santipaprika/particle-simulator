@@ -36,6 +36,7 @@ class Scene {
     void updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptorSetLayout& descriptorSetLayout);
     void renderUI();
 
+    void reset();
     bool showParticles{false};
 
    private:

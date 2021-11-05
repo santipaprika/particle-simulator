@@ -15,8 +15,6 @@ Cloth::Cloth(Device &device, int gridSize, float cellSize) : device{device} {
 }
 
 Cloth::~Cloth() {
-    delete[] dirs;
-
     vkUnmapMemory(device.device(), stagingBufferMemory);
 
     vkDestroyBuffer(device.device(), vertexBuffer, nullptr);
@@ -38,12 +36,36 @@ void Cloth::Builder::createClothModel(int gridSize, float cellSize) {
 
     for (int i = 0; i < gridSize; i++) {
         for (int j = 0; j < gridSize; j++) {
+            int idx = i * gridSize + j;
             vertices.push_back(Vertex{{i * cellSize, 0, j * cellSize}, glm::vec3(1.f), glm::vec3(0.f, 1.f, 0.f), glm::vec2(i, j) / (float)gridSize});
 
             // 2 triangles are defined for the cell at bottom-right of each vertex.
             // No need to define them for bottom row and right column (would be outside the grid)
             if (i != gridSize - 1 && j != gridSize - 1)
                 defineTrianglesInCell(i, j);
+
+            // define neighbor particles contributing to cloth internal forces in current particle
+
+            // Streaching
+            streachParticlesIdx.push_back({});
+            if (i > 0) streachParticlesIdx[idx].push_back(idx - gridSize);
+            if (i < gridSize - 1) streachParticlesIdx[idx].push_back(idx + gridSize);
+            if (j > 0) streachParticlesIdx[idx].push_back(idx - 1);
+            if (j < gridSize - 1) streachParticlesIdx[idx].push_back(idx + 1);
+
+            // Shearing
+            shearParticlesIdx.push_back({});
+            if (i > 0 && i < gridSize - 1 && j > 0 && j < gridSize - 1) {
+                shearParticlesIdx[idx].push_back({idx - gridSize - 1, idx + gridSize + 1});
+                shearParticlesIdx[idx].push_back({idx - gridSize + 1, idx + gridSize - 1});
+            }
+
+            // Bending
+            bendParticlesIdx.push_back({});
+            if (i > 1 && i < gridSize - 2)
+                bendParticlesIdx[idx].push_back({idx - 2 * gridSize, idx + 2 * gridSize});
+            if (j > 1 && j < gridSize - 2)
+                bendParticlesIdx[idx].push_back({idx - 2, idx + 2});
         }
     }
 
@@ -61,6 +83,15 @@ void Cloth::Builder::defineTrianglesInCell(int i, int j) {
     indices.push_back(i * gridSize + j);            // Current
     indices.push_back((i + 1) * gridSize + j + 1);  // Right-Bottom
     indices.push_back((i + 1) * gridSize + j);      // Bottom
+}
+
+void Cloth::Builder::reset() {
+    this->vertices.clear();
+    this->bendParticlesIdx.clear();
+    this->shearParticlesIdx.clear();
+    this->streachParticlesIdx.clear();
+    this->verticesParticles.clear();
+
 }
 
 void Cloth::loadParticles(TransformComponent &transform) {
@@ -173,6 +204,12 @@ void Cloth::bind(VkCommandBuffer commandBuffer) {
     }
 }
 
+void Cloth::applyGravityForce() {
+    for (int i = 0; i < vertexCount - 1; i++) {
+        builder.verticesParticles[i]->setForce(gravity);
+    }
+}
+
 void Cloth::update(float dt, KinematicEntities &kinematicEntities, TransformComponent &transform) {
     // compute number of steps to perform
     static float timeSinceLastUpdate{0.f};
@@ -185,9 +222,20 @@ void Cloth::update(float dt, KinematicEntities &kinematicEntities, TransformComp
 
     for (int step = 0; step < numSteps; step++) {
         // Spring forces update pass
-        for (int i = 0; i < vertexCount - 1; i++)
-            builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[i + 1], gravity, i == 0);
+        applyGravityForce();
+        for (int i = 0; i < vertexCount - 1; i++) {
+            for (int idx : builder.streachParticlesIdx[i]) {
+                builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[idx]);
+            }
 
+            for (auto &idxPair : builder.shearParticlesIdx[i]) {
+                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]]);
+            }
+
+            for (auto &idxPair : builder.bendParticlesIdx[i]) {
+                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]]);
+            }
+        }
         // Regular particle update and collision pass
         for (int i = builder.gridSize; i < vertexCount; i++) {
             builder.verticesParticles[i]->updateInScene(dt, numSteps, kinematicEntities, solver);
