@@ -101,10 +101,10 @@ void Scene::loadEntities(Scenario scenario) {
         case SCENE3: {
             // Cloth
             auto clothEntity = std::make_shared<Entity>(Entity::createEntity());
-            clothEntity->cloth = std::make_shared<Cloth>(device, 10, 0.2f);
+            clothEntity->cloth = std::make_shared<Cloth>(device, 14, 0.1f);
 
             clothEntity->material = material;
-            clothEntity->transform.translation = {-1.f, 4.5f, 0.f};
+            clothEntity->transform.translation = {-1.f, 4.5f, 1.5f};
             // clothEntity->transform.scale = {1.f,1.f,};
             // clothEntity->transform.rotation = {PI_2, PI_2, 0};
 

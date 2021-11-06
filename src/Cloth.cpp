@@ -69,6 +69,17 @@ void Cloth::Builder::createClothModel(int gridSize, float cellSize) {
         }
     }
 
+    uint32_t vtxCount = vertices.size();
+    uint32_t idxCount = indices.size();
+    // Opposite faces with inverted normal
+    for (uint32_t i=0; i < vtxCount; i++) {
+        vertices.push_back({vertices[i].position, vertices[i].color, -vertices[i].normal, vertices[i].uv});
+    }
+    
+    for (int i = (int)idxCount - 1; i >= 0; i--) {
+        indices.push_back(indices[i] + gridSize * gridSize);
+    }
+
     printf("Number of stored cloth points = %zd\n", vertices.size());
     printf("Number of indices = %zd\n", indices.size());
 }
@@ -91,10 +102,11 @@ void Cloth::Builder::reset() {
     this->shearParticlesIdx.clear();
     this->streachParticlesIdx.clear();
     this->verticesParticles.clear();
-
 }
 
 void Cloth::loadParticles(TransformComponent &transform) {
+    particleCount = builder.vertices.size() / 2;
+
     for (auto &vertex : builder.vertices) {
         // Create particle attached to vertex
         glm::vec3 worldPos = transform.mat4() * glm::vec4(vertex.position, 1.f);
@@ -112,9 +124,9 @@ void Cloth::loadParticles(TransformComponent &transform) {
 
         builder.verticesParticles.push_back(std::move(particle));
     }
-    for (int i = 0; i < builder.vertices.size() - 1; i++) {
-        builder.verticesParticles[i]->setDesiredLength(glm::length(builder.cellSize));
-    }
+    clothLengths.streachLength = builder.cellSize;
+    clothLengths.shearLength = 2 * sqrt(2 * builder.cellSize * builder.cellSize);
+    clothLengths.bendLength = 4 * builder.cellSize;
 }
 
 void Cloth::createVertexBuffers(const std::vector<Vertex> &vertices) {
@@ -128,7 +140,7 @@ void Cloth::createVertexBuffers(const std::vector<Vertex> &vertices) {
         vkFreeMemory(device.device(), vertexBufferMemory, nullptr);
     }
 
-    vertexCount = vertices.size();
+    vertexCount = static_cast<uint32_t>(vertices.size());
     VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 
     device.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -154,7 +166,7 @@ void Cloth::createIndexBuffers(const std::vector<uint32_t> &indices) {
         vkFreeMemory(device.device(), indexBufferMemory, nullptr);
     }
 
-    indexCount = indices.size();
+    indexCount = static_cast<uint32_t>(indices.size());
     hasIndexBuffer = indexCount > 0;
 
     if (!hasIndexBuffer) {
@@ -205,7 +217,7 @@ void Cloth::bind(VkCommandBuffer commandBuffer) {
 }
 
 void Cloth::applyGravityForce() {
-    for (int i = 0; i < vertexCount - 1; i++) {
+    for (int i = 0; i < (int)particleCount; i++) {
         builder.verticesParticles[i]->setForce(gravity);
     }
 }
@@ -223,26 +235,37 @@ void Cloth::update(float dt, KinematicEntities &kinematicEntities, TransformComp
     for (int step = 0; step < numSteps; step++) {
         // Spring forces update pass
         applyGravityForce();
-        for (int i = 0; i < vertexCount - 1; i++) {
+        for (int i = 0; i < (int)particleCount; i++) {
+            // Apply streaching
             for (int idx : builder.streachParticlesIdx[i]) {
-                builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[idx]);
+                builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[idx], clothLengths.streachLength);
             }
 
+            // Apply shearing
             for (auto &idxPair : builder.shearParticlesIdx[i]) {
-                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]]);
+                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]], clothLengths.shearLength);
             }
 
+            // Apply bending
             for (auto &idxPair : builder.bendParticlesIdx[i]) {
-                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]]);
+                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]], clothLengths.bendLength);
             }
         }
+
         // Regular particle update and collision pass
-        for (int i = builder.gridSize; i < vertexCount; i++) {
+        int startingParticleIdx = (int)particleCount;  // All fixed
+        if (fixed == FIXED_BY_SIDE)
+            startingParticleIdx = builder.gridSize;
+        else if (fixed == FIXED_BY_CORNER)
+            startingParticleIdx = 1;
+        else if (fixed == NOT_FIXED)
+            startingParticleIdx = 0;
+        for (int i = startingParticleIdx; i < (int)particleCount; i++) {
             builder.verticesParticles[i]->updateInScene(dt, numSteps, kinematicEntities, solver);
         }
     }
 
-    for (int i = 0; i < vertexCount; i++) {
+    for (int i = 0; i < (int)particleCount; i++) {
         builder.vertices[i].position = modelInv * glm::vec4(builder.verticesParticles[i]->getCurrentPosition(), 1.f);
     }
 
@@ -254,6 +277,19 @@ void Cloth::update(float dt, KinematicEntities &kinematicEntities, TransformComp
                                           builder.vertices[(i + 1) * size + j].position - builder.vertices[(i - 1) * size + j].position);
             builder.vertices[i * size + j].normal = glm::normalize(normal);
         }
+    }
+    // propagate normal in borders
+    for (int i = 0; i < size; i++) {
+        builder.vertices[i].normal = builder.vertices[i + size].normal;                                   // Top row
+        builder.vertices[size * (size - 1) + i].normal = builder.vertices[size * (size - 2) + i].normal;  // Bottom row
+        builder.vertices[i * size].normal = builder.vertices[i * size + 1].normal;                        // Left column
+        builder.vertices[size * (i + 1) - 1].normal = builder.vertices[size * (i + 1) - 2].normal;        // Right column
+    }
+
+    // Update back faces info
+    for (int i = 0; i < particleCount; i++) {
+        builder.vertices[i + particleCount].position = builder.vertices[i].position;
+        builder.vertices[i + particleCount].normal = -builder.vertices[i].normal;
     }
 
     updateBuffers();
@@ -296,14 +332,29 @@ void Cloth::renderUI() {
     ImGui::Combo("##clothSolver", (int *)&solver, items, IM_ARRAYSIZE(items));
 
     ImGui::Separator();  // ---------------------------------
-    ImGui::Checkbox("Fixed", &fixed);
+    ImGui::Text("Fix");
+    if (ImGui::RadioButton("All", fixed == ALL_FIXED)) {
+        fixed = ALL_FIXED;
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Edge", fixed == FIXED_BY_SIDE)) {
+        fixed = FIXED_BY_SIDE;
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Corner", fixed == FIXED_BY_CORNER)) {
+        fixed = FIXED_BY_CORNER;
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("None", fixed == NOT_FIXED)) {
+        fixed = NOT_FIXED;
+    }
 
     ImGui::Separator();  // ---------------------------------
     ImGui::Text("Cloth mass");
     ImGui::SliderFloat("##clothMass", &clothMass, 0.001f, 50.f);
     if (ImGui::IsItemEdited()) {
         for (auto &particle : builder.verticesParticles) {
-            particle->setMass(clothMass / vertexCount);
+            particle->setMass(clothMass / particleCount);
         }
     }
 

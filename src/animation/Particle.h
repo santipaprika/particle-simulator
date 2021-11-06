@@ -39,7 +39,7 @@ class Particle {
     void setStiffness(float stiffness) { m_stiffness = stiffness; }
     void setDamping(float damping) { m_damping = damping; }
     void setAirFriction(float airFriction) { m_airFriction = airFriction; }
-    void setDesiredLength(float desiredLength) { m_desiredLength = desiredLength; }
+    void setTargetLength(float targetLength) { m_targetLength = targetLength; }
     void addTime(float time) { m_currentTime += time; }
 
     //getters
@@ -50,6 +50,7 @@ class Particle {
     float getBouncing();
     float getLifetime();
     float getTimeStep() { return m_dt; }
+    float getTargetLength() { return m_targetLength; }
     bool isDead() { return m_currentTime >= m_lifetime; }
     bool isFixed();
 
@@ -65,7 +66,7 @@ class Particle {
     void checkAndCorrectCollisionParticlePlane(std::vector<std::shared_ptr<vkr::Entity>>& planes, int depth = 0);
 
     float computeTriangleArea(glm::vec3 edge1, glm::vec3 edge2);
-    void addSpringForce(std::shared_ptr<Particle> nextParticle);
+    void addSpringForce(std::shared_ptr<Particle> nextParticle, float targetLength);
 
    private:
     glm::vec3 m_currentPosition;
@@ -85,7 +86,7 @@ class Particle {
     float m_damping{0.5f};
     float m_airFriction{1.f};
     float m_mass{1.f};
-    float m_desiredLength;
+    float m_targetLength;
     bool m_fixed;
 
     bool m_firstUpdate{true};

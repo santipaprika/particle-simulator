@@ -16,8 +16,18 @@ struct KinematicEntities;
 struct TransformComponent;
 class Entity;
 
+struct ClothLengths {
+    float streachLength;
+    float shearLength;
+    float bendLength;
+};
+
 class Cloth {
    public:
+    enum { ALL_FIXED,
+           FIXED_BY_SIDE,
+           FIXED_BY_CORNER,
+           NOT_FIXED };
     struct Vertex {
         glm::vec3 position{};
         glm::vec3 color{};
@@ -78,24 +88,27 @@ class Cloth {
     VkBuffer vertexBuffer{VK_NULL_HANDLE};
     VkDeviceMemory vertexBufferMemory;
     uint32_t vertexCount;
+    uint32_t particleCount;
 
     bool hasIndexBuffer = false;
     VkBuffer indexBuffer{VK_NULL_HANDLE};
     VkDeviceMemory indexBufferMemory;
     uint32_t indexCount;
 
-    float clothMass{2.f};
+    float clothMass{2.5f};
 
     float stiffness{1000.f};
-    float damping{4.f};
+    float damping{0.8f};
     float bouncing{0.5f};
     float friction{0.5f};
-    float airFriction{0.993f};
+    float airFriction{0.996f};
 
-    bool fixed{true};
+    int fixed{ALL_FIXED};
     Particle::UpdateMethod solver{Particle::UpdateMethod::EulerSemi};
 
-    glm::vec3 gravity{0.f, -0.8f, 0.f};
+    ClothLengths clothLengths;
+
+    glm::vec3 gravity{0.f, -1.5f, 0.f};
 };
 
 }  // namespace vkr

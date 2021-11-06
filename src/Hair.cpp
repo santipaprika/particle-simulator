@@ -123,7 +123,7 @@ void Hair::loadParticles(TransformComponent &transform) {
         builder.verticesParticles.push_back(std::move(particle));
     }
     for (int i = 0; i < builder.vertices.size() - 1; i++) {
-        builder.verticesParticles[i]->setDesiredLength(glm::length(builder.verticesParticles[i + 1]->getCurrentPosition() - builder.verticesParticles[i]->getCurrentPosition()));
+        builder.verticesParticles[i]->setTargetLength(glm::length(builder.verticesParticles[i + 1]->getCurrentPosition() - builder.verticesParticles[i]->getCurrentPosition()));
     }
 }
 
@@ -233,7 +233,7 @@ void Hair::update(float dt, KinematicEntities &kinematicEntities, TransformCompo
             int offset = s * (builder.defaultSegments + 1);
             applyGravityForce(offset);
             for (int i = 0; i < builder.defaultSegments/*+ 1 - 1*/; i++) {
-                builder.verticesParticles[offset + i]->addSpringForce(builder.verticesParticles[offset + i + 1]);
+                builder.verticesParticles[offset + i]->addSpringForce(builder.verticesParticles[offset + i + 1], builder.verticesParticles[offset + i + 1]->getTargetLength());
             }
         }
 
