@@ -105,11 +105,11 @@ void Cloth::Builder::reset() {
 }
 
 void Cloth::loadParticles(TransformComponent &transform) {
-    particleCount = builder.vertices.size() / 2;
+    particleCount = builder.vertices.size() / static_cast<uint32_t>(2);
 
-    for (auto &vertex : builder.vertices) {
+    for (int i=0; i<particleCount; i++) {
         // Create particle attached to vertex
-        glm::vec3 worldPos = transform.mat4() * glm::vec4(vertex.position, 1.f);
+        glm::vec3 worldPos = transform.mat4() * glm::vec4(builder.vertices[i].position, 1.f);
 
         std::shared_ptr<Particle> particle = std::make_shared<Particle>(worldPos.x, worldPos.y, worldPos.z);
         particle->setBouncing(bouncing);

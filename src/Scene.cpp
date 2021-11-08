@@ -105,11 +105,9 @@ void Scene::loadEntities(Scenario scenario) {
 
             clothEntity->material = material;
             clothEntity->transform.translation = {-1.f, 4.5f, 1.5f};
-            // clothEntity->transform.scale = {1.f,1.f,};
-            // clothEntity->transform.rotation = {PI_2, PI_2, 0};
 
             clothEntity->cloth->loadParticles(clothEntity->transform);
-            for (int i = 0; i < clothEntity->cloth->builder.vertices.size(); i++) {
+            for (int i = 0; i < clothEntity->cloth->builder.vertices.size() / 2; i++) {
                 auto p = std::make_shared<Entity>(Entity::createEntity());
                 p->particle = clothEntity->cloth->builder.verticesParticles[i];
                 p->transform.translation = p->particle->getCurrentPosition();
