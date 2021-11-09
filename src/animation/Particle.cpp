@@ -188,7 +188,7 @@ void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntiti
     }
 }
 
-void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle, float targetLength) {
+void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle, float targetLength, float weight) {
     glm::vec3 particlesDifference = nextParticle->getCurrentPosition() - m_currentPosition;
     float particlesDistance = glm::length(particlesDifference);
     glm::vec3 dir = particlesDifference / particlesDistance;
@@ -200,7 +200,7 @@ void Particle::addSpringForce(std::shared_ptr<Particle> nextParticle, float targ
     float fd = m_damping * glm::dot((nextParticle->getVelocity() - m_velocity), dir);
 
     // Sum forces and set direction
-    glm::vec3 f = (fs + fd) * dir;
+    glm::vec3 f = (fs + fd) * dir * weight;
 
     addForce(f);
     nextParticle->addForce(-f);

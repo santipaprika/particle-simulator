@@ -22,6 +22,12 @@ struct ClothLengths {
     float bendLength;
 };
 
+struct InternalClothParameters {
+    float streach{1.f};
+    float shear{1.f};
+    float bend{1.f};
+};
+
 class Cloth {
    public:
     enum { ALL_FIXED,
@@ -102,6 +108,8 @@ class Cloth {
     float bouncing{0.5f};
     float friction{0.5f};
     float airFriction{0.996f};
+
+    InternalClothParameters internalClothParameters;
 
     int fixed{ALL_FIXED};
     Particle::UpdateMethod solver{Particle::UpdateMethod::EulerSemi};

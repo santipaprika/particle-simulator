@@ -66,7 +66,7 @@ class Particle {
     void checkAndCorrectCollisionParticlePlane(std::vector<std::shared_ptr<vkr::Entity>>& planes, int depth = 0);
 
     float computeTriangleArea(glm::vec3 edge1, glm::vec3 edge2);
-    void addSpringForce(std::shared_ptr<Particle> nextParticle, float targetLength);
+    void addSpringForce(std::shared_ptr<Particle> nextParticle, float targetLength, float weight = 1);
 
    private:
     glm::vec3 m_currentPosition;

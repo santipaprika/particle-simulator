@@ -72,10 +72,10 @@ void Cloth::Builder::createClothModel(int gridSize, float cellSize) {
     uint32_t vtxCount = vertices.size();
     uint32_t idxCount = indices.size();
     // Opposite faces with inverted normal
-    for (uint32_t i=0; i < vtxCount; i++) {
+    for (uint32_t i = 0; i < vtxCount; i++) {
         vertices.push_back({vertices[i].position, vertices[i].color, -vertices[i].normal, vertices[i].uv});
     }
-    
+
     for (int i = (int)idxCount - 1; i >= 0; i--) {
         indices.push_back(indices[i] + gridSize * gridSize);
     }
@@ -107,7 +107,7 @@ void Cloth::Builder::reset() {
 void Cloth::loadParticles(TransformComponent &transform) {
     particleCount = builder.vertices.size() / static_cast<uint32_t>(2);
 
-    for (int i=0; i<particleCount; i++) {
+    for (int i = 0; i < particleCount; i++) {
         // Create particle attached to vertex
         glm::vec3 worldPos = transform.mat4() * glm::vec4(builder.vertices[i].position, 1.f);
 
@@ -238,17 +238,17 @@ void Cloth::update(float dt, KinematicEntities &kinematicEntities, TransformComp
         for (int i = 0; i < (int)particleCount; i++) {
             // Apply streaching
             for (int idx : builder.streachParticlesIdx[i]) {
-                builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[idx], clothLengths.streachLength);
+                builder.verticesParticles[i]->addSpringForce(builder.verticesParticles[idx], clothLengths.streachLength, internalClothParameters.streach);
             }
 
             // Apply shearing
             for (auto &idxPair : builder.shearParticlesIdx[i]) {
-                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]], clothLengths.shearLength);
+                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]], clothLengths.shearLength, internalClothParameters.shear);
             }
 
             // Apply bending
             for (auto &idxPair : builder.bendParticlesIdx[i]) {
-                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]], clothLengths.bendLength);
+                builder.verticesParticles[idxPair[0]]->addSpringForce(builder.verticesParticles[idxPair[1]], clothLengths.bendLength, internalClothParameters.bend);
             }
         }
 
@@ -403,8 +403,16 @@ void Cloth::renderUI() {
         }
     }
 
+    ImGui::Separator();  // ---------------------------------
     ImGui::Text("Force");
     ImGui::SliderFloat3("##force", (float *)&gravity, -2.f, 2.f);
+
+    ImGui::Separator();  // ---------------------------------
+    ImGui::SliderFloat("Straching", &internalClothParameters.streach, 0.f, 1.f);
+    ImGui::SliderFloat("Shearing", &internalClothParameters.shear, 0.f, 1.f);
+    ImGui::SliderFloat("Bending", &internalClothParameters.bend, 0.f, 1.f);
+
+    ImGui::Separator();  // ---------------------------------
 }
 
 }  // namespace vkr
