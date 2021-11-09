@@ -44,4 +44,25 @@ void InputController::moveInPlaneXZ(
         entity.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
     }
 }
+
+void InputController::moveEntityInPlaneXZ(
+    GLFWwindow* window, float dt, Entity& entity) {
+    
+    glm::vec3 forwardDir{0.f,0.f,1.f};
+    glm::vec3 rightDir{-1.f,0.f,0.f};
+    glm::vec3 upDir{0.f,1.f,0.f};
+    glm::vec3 moveDir{0.f};
+
+    if (glfwGetKey(window, keys.moveSphereForward) == GLFW_PRESS) moveDir += forwardDir;
+    if (glfwGetKey(window, keys.moveSphereBackward) == GLFW_PRESS) moveDir -= forwardDir;
+    if (glfwGetKey(window, keys.moveSphereRight) == GLFW_PRESS) moveDir += rightDir;
+    if (glfwGetKey(window, keys.moveSphereLeft) == GLFW_PRESS) moveDir -= rightDir;
+    if (glfwGetKey(window, keys.moveSphereUp) == GLFW_PRESS) moveDir += upDir;
+    if (glfwGetKey(window, keys.moveSphereDown) == GLFW_PRESS) moveDir -= upDir;
+
+    if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
+        entity.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
+    }
+}
+
 }  // namespace vkr

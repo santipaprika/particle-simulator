@@ -3,6 +3,8 @@
 #include <Camera.hpp>
 #include <Entity.hpp>
 #include <Texture.hpp>
+#include <InputController.hpp>
+#include <Window.hpp>
 
 namespace vkr {
 
@@ -16,7 +18,7 @@ class Scene {
    public:
     enum Scenario { SCENE1, SCENE2, SCENE3 };
 
-    Scene(Device& device);
+    Scene(Device& device, Window& window);
     ~Scene();
 
     // Initialization
@@ -48,12 +50,15 @@ class Scene {
     Camera mainCamera;
 
     Device& device;
+    Window& window;
 
     std::shared_ptr<Material> blankMaterial;
     std::shared_ptr<Material> particleMaterial;
 
     std::shared_ptr<Mesh> sphereMesh;
     void createBox();
+
+    InputController inputController;
 
 };
 

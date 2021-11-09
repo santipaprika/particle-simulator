@@ -4,7 +4,7 @@
 #include <Scene.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#define EPS 0.001f
+#define EPS 0.00001f
 
 Particle::Particle() : m_currentPosition(0, 0, 0), m_previousPosition(0, 0, 0), m_bouncing(0.f), m_lifetime(50), m_fixed(false) {
 }
@@ -142,7 +142,7 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
             }
             m_previousPosition = m_currentPosition;
             m_currentPosition = 1.9999f * m_previousPosition - 0.9999f * m_previousPreviousPosition + dt * dt * m_force / m_mass;
-            m_currentPosition += (1-m_airFriction)*(m_previousPosition - m_currentPosition);
+            m_currentPosition += (1 - m_airFriction) * (m_previousPosition - m_currentPosition);
             m_velocity = (m_currentPosition - m_previousPosition) / dt;
 
         } break;
@@ -151,7 +151,6 @@ void Particle::updateParticle(const float& dt, UpdateMethod method) {
 }
 
 void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntities& kinematicEntities, UpdateMethod method) {
-    
     // call solver types: EulerOrig, EulerSemi and Verlet(to be implemented)
     updateParticle(m_dt, method);
 
@@ -181,8 +180,8 @@ void Particle::updateInScene(float frameTime, int numSteps, vkr::KinematicEntiti
     Plane plane;
     bool bugged{false};
     for (auto sphereEntity : kinematicEntities.kinematicSphereEntities) {
-        if (collisionParticleSphere(sphereEntity->transform.translation, sphereEntity->transform.scale.x, plane, bugged)) {
-            if (!bugged) 
+        if (collisionParticleSphere(sphereEntity->transform.translation, sphereEntity->transform.scale.x, plane, sphereEntity->velocity, bugged)) {
+            if (!bugged)
                 correctCollisionParticlePlain(plane);
         }
         bugged = false;
@@ -234,13 +233,22 @@ bool Particle::collisionParticleTriangle(Plane& p, std::array<glm::vec3, 3>& ver
     return false;
 }
 
-bool Particle::collisionParticleSphere(glm::vec3 center, float radius, Plane& plane, bool& bugged) {
+bool Particle::collisionParticleSphere(glm::vec3 center, float radius, Plane& plane, glm::vec3 sphereVelocity, bool& bugged) {
     // Discard particles outside the sphere
     float extendedRadius = radius + m_size;
     if (glm::length(m_currentPosition - center) > extendedRadius) return false;
 
     // Compute P as a contact sphere-segment
     glm::vec3 v = m_currentPosition - m_previousPosition;
+    
+    if (glm::length(sphereVelocity) > EPS) {
+        // sphere is the one moving!
+        glm::vec3 normal = glm::normalize(m_currentPosition - center);
+        v += 0.2f * glm::dot(sphereVelocity, glm::normalize(normal)) * -normal;
+        m_previousPosition = m_currentPosition - v;
+        m_velocity = m_currentPosition - m_previousPosition;
+    }
+
     float a = glm::dot(v, v);
     float b = glm::dot(2.f * v, m_previousPosition - center);
     float c = glm::dot(center, center) + glm::dot(m_previousPosition, m_previousPosition) -
@@ -262,9 +270,14 @@ bool Particle::collisionParticleSphere(glm::vec3 center, float radius, Plane& pl
         plane.setPlanePoint(P);
         return true;
     }
+    // } else {    // Cloth is static, sphere is the one moving!
+    //     plane.setPlaneNormal(glm::normalize(m_currentPosition - center));
+    //     plane.setPlanePoint(m_currentPosition);
+    //     m_velocity = sphereVelocity;
+    //     return true;
 
     // Fix precision errors
-    m_currentPosition += (m_currentPosition-m_previousPosition) * glm::normalize(m_previousPosition-center);
+    m_currentPosition += (m_currentPosition - m_previousPosition) * glm::normalize(m_previousPosition - center);
     bugged = true;
     m_firstUpdate = true;
     return true;

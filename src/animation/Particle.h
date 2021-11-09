@@ -61,7 +61,7 @@ class Particle {
     void updateInScene(float frameTime, int numSteps, vkr::KinematicEntities& kinematicEntities, UpdateMethod method);
     bool collisionParticlePlane(Plane& p);
     bool collisionParticleTriangle(Plane& p, std::array<glm::vec3, 3>& vertices);
-    bool collisionParticleSphere(glm::vec3 center, float radius, Plane& plane, bool& bugged);
+    bool collisionParticleSphere(glm::vec3 center, float radius, Plane& plane, glm::vec3 sphereVelocity, bool& bugged);
     void correctCollisionParticlePlain(Plane& p);
     void checkAndCorrectCollisionParticlePlane(std::vector<std::shared_ptr<vkr::Entity>>& planes, int depth = 0);
 

@@ -23,9 +23,16 @@ class InputController {
         int lookRight = GLFW_KEY_RIGHT;
         int lookUp = GLFW_KEY_UP;
         int lookDown = GLFW_KEY_DOWN;
+        int moveSphereLeft = GLFW_KEY_J;
+        int moveSphereRight = GLFW_KEY_L;
+        int moveSphereForward = GLFW_KEY_I;
+        int moveSphereBackward = GLFW_KEY_K;
+        int moveSphereUp = GLFW_KEY_O;
+        int moveSphereDown = GLFW_KEY_U;
     };
 
     void moveInPlaneXZ(GLFWwindow* window, float dt, Entity& entity);
+    void moveEntityInPlaneXZ(GLFWwindow* window, float dt, Entity& entity);
 
     KeyMappings keys{};
     float moveSpeed{3.f};

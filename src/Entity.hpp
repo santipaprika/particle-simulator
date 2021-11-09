@@ -76,6 +76,7 @@ class Entity {
     void render(glm::mat4 camProjectionView, FrameInfo& frameInfo, VkPipelineLayout pipelineLayout);
 
     TransformComponent transform{};
+    glm::vec3 velocity{0.f};
 
     // COMPONENTS (Might be a vector?)
     std::shared_ptr<Mesh> mesh{nullptr};

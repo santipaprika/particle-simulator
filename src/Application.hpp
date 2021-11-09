@@ -39,6 +39,6 @@ class Application {
     Device device{window};
     Renderer renderer{window, device};
 
-    Scene scene{device};
+    Scene scene{device, window};
 };
 }  // namespace vkr

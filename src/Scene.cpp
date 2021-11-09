@@ -6,7 +6,7 @@
 
 namespace vkr {
 
-Scene::Scene(Device& device) : device{device} {
+Scene::Scene(Device& device, Window& window) : device{device}, window{window} {
 }
 
 Scene::~Scene() {
@@ -24,8 +24,12 @@ void Scene::loadEntities(Scenario scenario) {
 
     std::shared_ptr<Texture> blankTexture = Texture::createTextureFromFile(device, (textures_path + "/blank.jpg"));
     std::shared_ptr<Material> material = std::make_shared<Material>(blankTexture);
-    material->setDiffuseColor(glm::vec4(0.f, 1.f, 0.f, 1.f));
+    material->setDiffuseColor(glm::vec4(0.f, 0.6f, 0.f, 1.f));
     blankMaterial = std::make_shared<Material>(blankTexture);
+    
+    std::shared_ptr<Texture> clothTexture = Texture::createTextureFromFile(device, (textures_path + "/cloth2.png"));
+    std::shared_ptr<Material> clothMaterial = std::make_shared<Material>(clothTexture);
+    clothMaterial->setDiffuseColor(glm::vec4(1.f, 1.f, 1.f, 1.f));
 
     // Mesh Entities
     std::string models_path(MODELS_PATH);
@@ -101,10 +105,12 @@ void Scene::loadEntities(Scenario scenario) {
         case SCENE3: {
             // Cloth
             auto clothEntity = std::make_shared<Entity>(Entity::createEntity());
-            clothEntity->cloth = std::make_shared<Cloth>(device, 14, 0.1f);
+            int gridSize = 14;
+            float cellSize = 0.13f;
+            clothEntity->cloth = std::make_shared<Cloth>(device, gridSize, cellSize);
 
-            clothEntity->material = material;
-            clothEntity->transform.translation = {-1.f, 4.5f, 1.5f};
+            clothEntity->material = clothMaterial;
+            clothEntity->transform.translation = {-(gridSize-1)/2.f * cellSize, 4.5f, (gridSize-1)/2.f * cellSize};
 
             clothEntity->cloth->loadParticles(clothEntity->transform);
             for (int i = 0; i < clothEntity->cloth->builder.vertices.size() / 2; i++) {
@@ -257,8 +263,13 @@ void Scene::updateScene(float dt, VkDescriptorPool& descriptorPool, VkDescriptor
             entity->hair->update(dt, kinematicEntities, entity->transform);
         } else if (entity->cloth) {
             entity->cloth->update(dt, kinematicEntities, entity->transform);
+        } else if (entity->colliderType == Entity::ColliderType::SPHERE) {
+            glm::vec3 prevPos = entity->transform.translation;
+            inputController.moveEntityInPlaneXZ(window.getGLFWwindow(), dt, *entity);
+            entity->velocity = (entity->transform.translation - prevPos) / dt;
         }
     }
+
 }
 
 void Scene::renderUI() {
